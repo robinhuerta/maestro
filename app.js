@@ -112,9 +112,6 @@ function renderDate() {
 function calculateGlobalBalance() {
     const total = projectsData.reduce((acc, p) => acc + (p.balance || 0), 0);
     document.getElementById('total-balance').textContent = formatSoles(total);
-
-    const online = projectsData.filter(p => p.status === 'online').length;
-    document.getElementById('insight-projects').textContent = online;
 }
 
 function getStatusColor(status) {
@@ -288,7 +285,7 @@ function initFirebase() {
 
 async function openCerebroModal() {
     document.getElementById('modal-cerebro').classList.add('active');
-    if (erpAuth.currentUser) {
+    if (erpAuth && erpAuth.currentUser) {
         showERPData(erpAuth.currentUser);
         await renderERPData();
     } else {
@@ -447,7 +444,7 @@ function initGorrasFirebase() {
 
 async function openGorrasModal() {
     document.getElementById('modal-gorras').classList.add('active');
-    if (gorrasAuth.currentUser) {
+    if (gorrasAuth && gorrasAuth.currentUser) {
         showGorrasData(gorrasAuth.currentUser);
         await renderGorrasData();
     } else {
