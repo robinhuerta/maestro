@@ -40,50 +40,30 @@
         <!-- Main Content -->
         <main class="main-content">
 
+            <!-- Header fijo (siempre visible) -->
+            <header class="top-header">
+                <div class="welcome">
+                    <h1 id="welcome-title">Buenos Días, Administrador</h1>
+                    <p>Hoy es <span id="current-date"></span></p>
+                </div>
+                <div class="global-stats-header">
+                    <div class="stat-header-item">
+                        <small>Balance Total</small>
+                        <h3 id="total-balance">S/ 0.00</h3>
+                    </div>
+                    <div class="user-profile">
+                        <div class="avatar" id="avatar-initials">A</div>
+                    </div>
+                </div>
+            </header>
+
             <!-- ===== PAGE: Panel Control ===== -->
             <div id="page-dashboard" class="page page-active">
-                <header>
-                    <div class="welcome">
-                        <h1 id="welcome-title">Buenos Días, Administrador</h1>
-                        <p>Hoy es <span id="current-date"></span></p>
-                    </div>
-                    <div class="global-stats-header">
-                        <div class="stat-header-item">
-                            <small>Balance Total</small>
-                            <h3 id="total-balance">S/ 0.00</h3>
-                        </div>
-                        <div class="user-profile">
-                            <div class="avatar" id="avatar-initials">A</div>
-                        </div>
-                    </div>
-                </header>
-                <section class="insights">
-                    <div class="insight-card glass">
-                        <div class="insight-info">
-                            <h3>Flujo de Caja</h3>
-                            <p class="value positive" id="insight-cashflow">+0%</p>
-                        </div>
-                    </div>
-                    <div class="insight-card glass">
-                        <div class="insight-info">
-                            <h3>Proyectos Activos</h3>
-                            <p class="value" id="insight-projects">0</p>
-                        </div>
-                    </div>
-                    <div class="insight-card glass">
-                        <div class="insight-info">
-                            <h3>Alertas Sistema</h3>
-                            <p class="value warning" id="insight-alerts">0 Pendientes</p>
-                        </div>
-                    </div>
-                </section>
-                <section class="projects-section">
-                    <div class="section-header">
-                        <h2>Mis Proyectos & Negocios</h2>
-                        <button class="btn-primary" id="btn-add-project">Conciliar Cuentas</button>
-                    </div>
-                    <div id="projects-grid" class="projects-grid"></div>
-                </section>
+                <div class="section-header">
+                    <h2>Mis Proyectos & Negocios</h2>
+                    <button class="btn-primary" id="btn-add-project">Conciliar Cuentas</button>
+                </div>
+                <div id="projects-grid" class="projects-grid"></div>
             </div>
 
             <!-- ===== PAGE: Cuentas Globales ===== -->
