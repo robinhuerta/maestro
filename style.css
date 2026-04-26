@@ -424,8 +424,71 @@ input:focus, select:focus {
 .t-date { color: var(--text-dim); width: 80px; }
 .t-client { flex-grow: 1; margin: 0 10px; }
 .t-amount { font-weight: 700; }
+.t-amount.positive { color: var(--success); }
+.t-amount.negative { color: var(--danger); }
 .t-type-entrega { color: var(--warning); }
 .t-type-cobranza { color: var(--success); }
+
+/* Balance resumen Word Capas */
+.wc-balance-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid var(--primary);
+    border-radius: 12px;
+    padding: 0.8rem 1.2rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.wc-balance-summary strong {
+    font-size: 1.3rem;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* Boton eliminar transaccion */
+.btn-delete-tx {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-delete-tx:hover {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Btn view como boton */
+.btn-view {
+    font-size: 0.8rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.btn-view:hover {
+    text-decoration: underline;
+}
+
+.tx-empty {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 1rem 0;
+    list-style: none;
+}
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }

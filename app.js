@@ -1,5 +1,13 @@
 // MAESTRO Dashboard Logic
 
+// Formato de moneda en Soles Peruanos
+function formatSoles(amount) {
+    return new Intl.NumberFormat('es-PE', {
+        style: 'currency',
+        currency: 'PEN'
+    }).format(amount);
+}
+
 const projectsData = [
     {
         id: 'radio',
@@ -8,16 +16,16 @@ const projectsData = [
         status: 'online',
         lastUpdate: 'Hace 2 min',
         balance: 12450.50,
-        path: '../radio-la-nueva-540'
+        path: 'https://radio-la-nueva-540.netlify.app'
     },
     {
         id: 'cosmos',
-        name: 'COSMOS Neflix',
+        name: 'COSMOS Netflix',
         icon: '🎬',
         status: 'online',
         lastUpdate: 'En vivo',
         balance: 8900.00,
-        path: '../NEFLIX'
+        path: 'https://cosmos-netflix.netlify.app'
     },
     {
         id: 'cerebro',
@@ -26,7 +34,7 @@ const projectsData = [
         status: 'online',
         lastUpdate: 'Sincronizado',
         balance: 45600.75,
-        path: '../CEREBRO ERP'
+        path: '#'
     },
     {
         id: 'gorras',
@@ -35,7 +43,7 @@ const projectsData = [
         status: 'offline',
         lastUpdate: 'Hace 1 hora',
         balance: 3200.20,
-        path: '../TODO PARA GORRA'
+        path: '#'
     },
     {
         id: 'crm-textil',
@@ -44,16 +52,16 @@ const projectsData = [
         status: 'online',
         lastUpdate: 'Procesando',
         balance: 15700.00,
-        path: '../crm con ia textil'
+        path: '#'
     },
     {
         id: 'entrust',
-        name: 'Catalogo Entrust',
+        name: 'Catálogo Entrust',
         icon: '📋',
         status: 'online',
         lastUpdate: 'Actualizado',
         balance: 0.00,
-        path: '../catalogo entrust'
+        path: '#'
     },
     {
         id: 'word-capas',
@@ -61,16 +69,34 @@ const projectsData = [
         icon: '🌍',
         status: 'manual',
         lastUpdate: 'Manual',
-        balance: 5600.00,
+        balance: 0,
         path: '#',
         isManual: true
     }
 ];
 
-let manualTransactions = [
-    { client: 'García Hermanos', type: 'entrega', amount: 1500, date: '2026-04-25' },
-    { client: 'Textiles del Sur', type: 'cobranza', amount: 800, date: '2026-04-26' }
-];
+// Persistencia con localStorage
+function loadTransactions() {
+    const saved = localStorage.getItem('maestro_word_capas_tx');
+    return saved ? JSON.parse(saved) : [
+        { client: 'García Hermanos', type: 'entrega', amount: 1500, date: '2026-04-25' },
+        { client: 'Textiles del Sur', type: 'cobranza', amount: 800, date: '2026-04-26' }
+    ];
+}
+
+function saveTransactions() {
+    localStorage.setItem('maestro_word_capas_tx', JSON.stringify(manualTransactions));
+}
+
+function recalcWordCapasBalance() {
+    const wc = projectsData.find(p => p.id === 'word-capas');
+    wc.balance = manualTransactions.reduce((acc, tx) => {
+        return tx.type === 'cobranza' ? acc + tx.amount : acc - tx.amount;
+    }, 0);
+}
+
+let manualTransactions = loadTransactions();
+recalcWordCapasBalance();
 
 function initDashboard() {
     renderDate();
@@ -87,10 +113,7 @@ function renderDate() {
 
 function calculateGlobalBalance() {
     const total = projectsData.reduce((acc, curr) => acc + curr.balance, 0);
-    document.getElementById('total-balance').textContent = new Intl.NumberFormat('es-ES', {
-        style: 'currency',
-        currency: 'USD'
-    }).format(total);
+    document.getElementById('total-balance').textContent = formatSoles(total);
 }
 
 function renderProjects() {
@@ -111,7 +134,7 @@ function renderProjects() {
             </div>
             <div class="project-footer">
                 <div class="project-account">
-                    ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD' }).format(project.balance)}
+                    ${formatSoles(project.balance)}
                 </div>
                 ${project.isManual ? 
                     `<button class="btn-view" onclick="openManualModal('${project.id}')">Gestionar →</button>` : 
@@ -148,40 +171,67 @@ function initModalEvents() {
         };
 
         manualTransactions.unshift(newTx);
-        
-        // Update balance of Word Capas
-        const wc = projectsData.find(p => p.id === 'word-capas');
-        if (newTx.type === 'cobranza') wc.balance += newTx.amount;
-        else wc.balance -= newTx.amount;
+        saveTransactions();
+        recalcWordCapasBalance();
+
+        // Feedback visual
+        const btn = form.querySelector('button[type="submit"]');
+        btn.textContent = '✅ Registrado';
+        setTimeout(() => btn.textContent = 'Registrar Movimiento', 1500);
 
         form.reset();
         renderTransactions();
         renderProjects();
         calculateGlobalBalance();
     };
+
+    // Botón eliminar transacción (delegación de eventos)
+    document.getElementById('transaction-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-delete-tx');
+        if (!btn) return;
+        const idx = parseInt(btn.dataset.index);
+        manualTransactions.splice(idx, 1);
+        saveTransactions();
+        recalcWordCapasBalance();
+        renderTransactions();
+        renderProjects();
+        calculateGlobalBalance();
+    });
 }
 
 function renderTransactions() {
     const list = document.getElementById('transaction-list');
-    list.innerHTML = manualTransactions.map(tx => `
+
+    if (manualTransactions.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin movimientos registrados.</li>';
+        document.getElementById('wc-total').textContent = formatSoles(0);
+        return;
+    }
+
+    list.innerHTML = manualTransactions.map((tx, idx) => `
         <li class="transaction-item">
             <span class="t-date">${tx.date}</span>
             <span class="t-client">${tx.client}</span>
-            <span class="t-type-${tx.type}">${tx.type === 'entrega' ? 'Entrega' : 'Cobro'}</span>
-            <span class="t-amount">$${tx.amount.toFixed(2)}</span>
+            <span class="t-type-${tx.type}">${tx.type === 'entrega' ? '📦 Entrega' : '💰 Cobro'}</span>
+            <span class="t-amount ${tx.type === 'cobranza' ? 'positive' : 'negative'}">${tx.type === 'cobranza' ? '+' : '-'}${formatSoles(tx.amount)}</span>
+            <button class="btn-delete-tx" data-index="${idx}" title="Eliminar">✕</button>
         </li>
     `).join('');
+
+    // Resumen de balance
+    const wc = projectsData.find(p => p.id === 'word-capas');
+    document.getElementById('wc-total').textContent = formatSoles(wc.balance);
 }
 
 // Initial Call
 document.addEventListener('DOMContentLoaded', initDashboard);
 
-// Mock dynamic updates
+// Mock dynamic updates (solo proyectos online, excluye Word Capas)
 setInterval(() => {
-    const randomProject = projectsData[Math.floor(Math.random() * projectsData.length)];
-    if (randomProject.status === 'online') {
-        randomProject.balance += (Math.random() * 10);
-        calculateGlobalBalance();
-        renderProjects();
-    }
+    const onlineProjects = projectsData.filter(p => p.status === 'online' && !p.isManual);
+    if (onlineProjects.length === 0) return;
+    const randomProject = onlineProjects[Math.floor(Math.random() * onlineProjects.length)];
+    randomProject.balance += (Math.random() * 50);
+    calculateGlobalBalance();
+    renderProjects();
 }, 5000);

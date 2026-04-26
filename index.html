@@ -86,9 +86,15 @@
         <div id="modal-manual" class="modal">
             <div class="modal-content glass">
                 <header>
-                    <h2 id="modal-title">Gestión Manual: Word Capas</h2>
+                    <h2 id="modal-title">🌍 Word Capas — Gestión de Cuentas</h2>
                     <span class="close-btn">&times;</span>
                 </header>
+
+                <!-- Balance resumen -->
+                <div class="wc-balance-summary">
+                    <span>Balance Actual:</span>
+                    <strong id="wc-total">S/ 0.00</strong>
+                </div>
                 <form id="form-manual">
                     <div class="form-group">
                         <label>Cliente</label>
@@ -103,8 +109,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Monto</label>
-                            <input type="number" id="m-amount" step="0.01" required>
+                            <label>Monto (S/)</label>
+                            <input type="number" id="m-amount" step="0.01" placeholder="Ej: 150.00" required>
                         </div>
                     </div>
                     <div class="form-group">
