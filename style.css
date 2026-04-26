@@ -429,7 +429,7 @@ input:focus, select:focus {
 .t-type-entrega { color: var(--warning); }
 .t-type-cobranza { color: var(--success); }
 
-/* Balance resumen Word Capas */
+/* Balance resumen Word Caps */
 .wc-balance-summary {
     display: flex;
     justify-content: space-between;

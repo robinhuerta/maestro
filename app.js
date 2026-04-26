@@ -65,7 +65,7 @@ const projectsData = [
     },
     {
         id: 'word-capas',
-        name: 'Word Capas',
+        name: 'Word Caps',
         icon: '🌍',
         status: 'manual',
         lastUpdate: 'Manual',
@@ -226,7 +226,7 @@ function renderTransactions() {
 // Initial Call
 document.addEventListener('DOMContentLoaded', initDashboard);
 
-// Mock dynamic updates (solo proyectos online, excluye Word Capas)
+// Mock dynamic updates (solo proyectos online, excluye Word Caps)
 setInterval(() => {
     const onlineProjects = projectsData.filter(p => p.status === 'online' && !p.isManual);
     if (onlineProjects.length === 0) return;
