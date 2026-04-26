@@ -37,9 +37,10 @@ const projectsData = [
         name: 'CEREBRO ERP',
         icon: '🧠',
         status: 'online',
-        lastUpdate: 'Firebase conectado',
+        lastUpdate: 'Sin conectar',
         balance: 0,
-        path: 'https://cerebro-erp.vercel.app'
+        path: 'https://cerebro-erp.vercel.app',
+        modalId: 'modal-cerebro'
     },
     {
         id: 'gorras',
@@ -168,6 +169,8 @@ function renderProjects() {
 function openProjectModal(modalId) {
     if (modalId === 'modal-radio') {
         openRadioModal();
+    } else if (modalId === 'modal-cerebro') {
+        openCerebroModal();
     } else {
         document.getElementById(modalId)?.classList.add('active');
     }
@@ -250,6 +253,158 @@ function renderTransactions() {
     `).join('');
 
     document.getElementById('wc-total').textContent = formatSoles(wc.balance);
+}
+
+// === MÓDULO: CEREBRO ERP (Firebase) ===
+const ERP_FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyBkuj8-5is0EY7VPq_1-ilGeL-QayUGcqw',
+    authDomain: 'cerebro-erp.firebaseapp.com',
+    projectId: 'cerebro-erp',
+    storageBucket: 'cerebro-erp.firebasestorage.app',
+    messagingSenderId: '857696146386',
+    appId: '1:857696146386:web:04e9b94a52670a193cee0b',
+};
+
+let erpDb, erpAuth;
+
+function initFirebase() {
+    const erpApp = firebase.initializeApp(ERP_FIREBASE_CONFIG, 'cerebro');
+    erpDb = firebase.firestore(erpApp);
+    erpAuth = firebase.auth(erpApp);
+
+    erpAuth.onAuthStateChanged(async (user) => {
+        if (user) {
+            const result = await loadERPData();
+            if (result) updateERPCard(result);
+        }
+    });
+}
+
+async function openCerebroModal() {
+    document.getElementById('modal-cerebro').classList.add('active');
+    if (erpAuth.currentUser) {
+        showERPData(erpAuth.currentUser);
+        await renderERPData();
+    } else {
+        showERPConnect();
+    }
+}
+
+function showERPConnect() {
+    document.getElementById('cerebro-connect-form').style.display = 'block';
+    document.getElementById('cerebro-data').style.display = 'none';
+}
+
+function showERPData(user) {
+    document.getElementById('cerebro-connect-form').style.display = 'none';
+    document.getElementById('cerebro-data').style.display = 'block';
+    document.getElementById('cerebro-user-email').textContent = user.email;
+}
+
+async function loadERPData() {
+    try {
+        const snapshot = await erpDb.collection('orders').get();
+        const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const totalVentas = orders.reduce((acc, o) => acc + (o.financials?.totalPrice || 0), 0);
+        const cobrado    = orders.reduce((acc, o) => acc + (o.financials?.paidAmount || 0), 0);
+        const gastos     = orders.reduce((acc, o) => acc + (o.financials?.totalExpenses || 0), 0);
+        const pendiente  = totalVentas - cobrado;
+        const activas    = orders.filter(o => o.status !== 'Cobrado');
+        return { orders, activas, totalVentas, cobrado, gastos, pendiente };
+    } catch (e) {
+        console.error('Error leyendo ERP:', e);
+        return null;
+    }
+}
+
+function updateERPCard(result) {
+    const erp = projectsData.find(p => p.id === 'cerebro');
+    erp.balance = result.cobrado;
+    erp.lastUpdate = `${result.activas.length} orden${result.activas.length !== 1 ? 'es' : ''} activa${result.activas.length !== 1 ? 's' : ''}`;
+    calculateGlobalBalance();
+    renderProjects();
+}
+
+async function renderERPData() {
+    const list = document.getElementById('erp-orders-list');
+    list.innerHTML = '<li class="tx-empty">Cargando...</li>';
+
+    const result = await loadERPData();
+    if (!result) {
+        list.innerHTML = '<li class="tx-empty error-msg">⚠️ Error al leer datos del ERP.</li>';
+        return;
+    }
+
+    const { activas, totalVentas, cobrado, gastos, pendiente } = result;
+    document.getElementById('erp-total-ventas').textContent = formatSoles(totalVentas);
+    document.getElementById('erp-cobrado').textContent      = formatSoles(cobrado);
+    document.getElementById('erp-pendiente').textContent    = formatSoles(pendiente);
+    document.getElementById('erp-gastos').textContent       = formatSoles(gastos);
+    updateERPCard(result);
+
+    if (activas.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin órdenes en producción.</li>';
+        return;
+    }
+
+    const statusColor = {
+        'Cotización': 'estado-inactivo', 'Coordinación': 'estado-inactivo',
+        'Revisión Stock': 'estado-inactivo', 'Compras': 'estado-inactivo',
+        'Corte': 'estado-activo', 'Bordado': 'estado-activo',
+        'Confección': 'estado-activo', 'Control Calidad': 'estado-activo',
+        'Entrega': 'estado-vencido',
+    };
+
+    list.innerHTML = activas.slice(0, 10).map(o => `
+        <li class="sponsor-item">
+            <div class="sponsor-left">
+                <span class="sponsor-name">${o.clientName || 'Cliente'}</span>
+                <span class="sponsor-detail">#${o.id?.slice(-6) || '—'}</span>
+            </div>
+            <div class="sponsor-right">
+                <span class="sponsor-badge ${statusColor[o.status] || 'estado-inactivo'}">${o.status}</span>
+                <span class="sponsor-amount">${formatSoles(o.financials?.totalPrice || 0)}</span>
+            </div>
+        </li>
+    `).join('');
+}
+
+function initCerebroForm() {
+    const form    = document.getElementById('form-cerebro-auth');
+    const errorEl = document.getElementById('cerebro-auth-error');
+    const btn     = document.getElementById('btn-cerebro-connect');
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Conectando...';
+        errorEl.style.display = 'none';
+
+        try {
+            const result = await erpAuth.signInWithEmailAndPassword(
+                document.getElementById('erp-email').value,
+                document.getElementById('erp-password').value
+            );
+            showERPData(result.user);
+            await renderERPData();
+        } catch {
+            errorEl.textContent = 'Credenciales incorrectas. Verifica tu correo y contraseña de Firebase.';
+            errorEl.style.display = 'block';
+        }
+
+        btn.textContent = 'Conectar CEREBRO ERP';
+        btn.disabled = false;
+    };
+
+    document.getElementById('btn-cerebro-disconnect').onclick = async () => {
+        await erpAuth.signOut();
+        showERPConnect();
+        const erp = projectsData.find(p => p.id === 'cerebro');
+        erp.balance = 0;
+        erp.lastUpdate = 'Sin conectar';
+        calculateGlobalBalance();
+        renderProjects();
+    };
 }
 
 // === MÓDULO: Radio La Nueva 540 ===
@@ -400,6 +555,8 @@ function initDashboard() {
     calculateGlobalBalance();
     initModalClose();
     initManualForm();
+    initFirebase();
+    initCerebroForm();
     initRadioForm();
     loadRadioBalance();
 }

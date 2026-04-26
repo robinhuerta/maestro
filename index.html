@@ -124,6 +124,70 @@
         </div>
 
         <!-- ==========================================
+             MODAL: CEREBRO ERP — Finanzas & Órdenes
+        =========================================== -->
+        <div id="modal-cerebro" class="modal">
+            <div class="modal-content modal-wide glass">
+                <header>
+                    <h2>🧠 CEREBRO ERP — Finanzas & Órdenes</h2>
+                    <span class="close-btn">&times;</span>
+                </header>
+
+                <!-- Estado: no conectado -->
+                <div id="cerebro-connect-form">
+                    <p class="connect-desc">Ingresa tus credenciales de Firebase para conectar CEREBRO ERP con MAESTRO. La sesión se mantiene activa automáticamente.</p>
+                    <form id="form-cerebro-auth">
+                        <div class="form-group">
+                            <label>Correo electrónico</label>
+                            <input type="email" id="erp-email" placeholder="tu@correo.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña</label>
+                            <input type="password" id="erp-password" placeholder="••••••••" required>
+                        </div>
+                        <p id="cerebro-auth-error" class="error-msg" style="display:none"></p>
+                        <button type="submit" class="btn-primary" id="btn-cerebro-connect">Conectar CEREBRO ERP</button>
+                    </form>
+                </div>
+
+                <!-- Estado: conectado -->
+                <div id="cerebro-data" style="display:none">
+                    <div class="connected-bar">
+                        <span class="connect-badge">✅ Conectado</span>
+                        <span id="cerebro-user-email" class="connect-email"></span>
+                        <button class="btn-disconnect" id="btn-cerebro-disconnect">Desconectar</button>
+                    </div>
+
+                    <div class="module-summary">
+                        <div class="summary-item">
+                            <small>Total Ventas</small>
+                            <strong id="erp-total-ventas">S/ 0.00</strong>
+                        </div>
+                        <div class="summary-item">
+                            <small>Cobrado</small>
+                            <strong id="erp-cobrado" class="text-success">S/ 0.00</strong>
+                        </div>
+                        <div class="summary-item">
+                            <small>Por Cobrar</small>
+                            <strong id="erp-pendiente" class="text-warning">S/ 0.00</strong>
+                        </div>
+                        <div class="summary-item">
+                            <small>Gastos</small>
+                            <strong id="erp-gastos" class="text-danger">S/ 0.00</strong>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3 class="section-label">Órdenes en Producción</h3>
+                        <ul id="erp-orders-list">
+                            <li class="tx-empty">Cargando...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
              MODAL: Radio La Nueva 540 — Auspiciadores
         =========================================== -->
         <div id="modal-radio" class="modal">
@@ -208,6 +272,10 @@
 
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Firebase CDN (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

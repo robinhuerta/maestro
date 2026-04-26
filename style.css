@@ -639,6 +639,56 @@ input:focus, select:focus {
     white-space: nowrap;
 }
 
+/* === CEREBRO ERP — Connect / Disconnect === */
+.connect-desc {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.connected-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.connect-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--success);
+}
+
+.connect-email {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    flex-grow: 1;
+}
+
+.btn-disconnect {
+    font-size: 0.75rem;
+    color: var(--danger);
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-disconnect:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.text-warning { color: var(--warning) !important; }
+.text-danger  { color: var(--danger)  !important; }
+
 /* === MISC === */
 .btn-disabled {
     opacity: 0.4;
