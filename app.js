@@ -20,7 +20,7 @@ const projectsData = [
         status: 'online',
         lastUpdate: 'Cargando...',
         balance: 0,
-        path: 'https://radio-la-nueva-540.netlify.app',
+        path: 'https://radioficial540.netlify.app',
         modalId: 'modal-radio'
     },
     {
