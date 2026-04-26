@@ -47,9 +47,10 @@ const projectsData = [
         name: 'TODO PARA GORRA',
         icon: '🧢',
         status: 'online',
-        lastUpdate: 'Firebase conectado',
+        lastUpdate: 'Sin conectar',
         balance: 0,
-        path: 'https://todo-para-gorra.vercel.app'
+        path: 'https://todo-para-gorra.vercel.app',
+        modalId: 'modal-gorras'
     },
     {
         id: 'crm-textil',
@@ -171,6 +172,8 @@ function openProjectModal(modalId) {
         openRadioModal();
     } else if (modalId === 'modal-cerebro') {
         openCerebroModal();
+    } else if (modalId === 'modal-gorras') {
+        openGorrasModal();
     } else {
         document.getElementById(modalId)?.classList.add('active');
     }
@@ -407,6 +410,164 @@ function initCerebroForm() {
     };
 }
 
+// === MÓDULO: TODO PARA GORRA (Firebase) ===
+const GORRAS_FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyCcqj26gP720MgumMws-Nyx4bLrFpIwtyA',
+    authDomain: 'todoparagorras-5968e.firebaseapp.com',
+    projectId: 'todoparagorras-5968e',
+    storageBucket: 'todoparagorras-5968e.firebasestorage.app',
+    messagingSenderId: '765727380045',
+    appId: '1:765727380045:web:2c0ee1d03c3c435dc70204',
+};
+
+let gorrasDb, gorrasAuth;
+
+function initGorrasFirebase() {
+    const gorrasApp = firebase.initializeApp(GORRAS_FIREBASE_CONFIG, 'gorras');
+    gorrasDb   = firebase.firestore(gorrasApp);
+    gorrasAuth = firebase.auth(gorrasApp);
+
+    gorrasAuth.onAuthStateChanged(async (user) => {
+        if (user) {
+            const result = await loadGorrasData();
+            if (result) updateGorrasCard(result);
+        }
+    });
+}
+
+async function openGorrasModal() {
+    document.getElementById('modal-gorras').classList.add('active');
+    if (gorrasAuth.currentUser) {
+        showGorrasData(gorrasAuth.currentUser);
+        await renderGorrasData();
+    } else {
+        showGorrasConnect();
+    }
+}
+
+function showGorrasConnect() {
+    document.getElementById('gorras-connect-form').style.display = 'block';
+    document.getElementById('gorras-data').style.display = 'none';
+}
+
+function showGorrasData(user) {
+    document.getElementById('gorras-connect-form').style.display = 'none';
+    document.getElementById('gorras-data').style.display = 'block';
+    document.getElementById('gorras-user-email').textContent = user.email;
+}
+
+async function loadGorrasData() {
+    try {
+        const [proformasSnap, clientsSnap] = await Promise.all([
+            gorrasDb.collection('proformas').get(),
+            gorrasDb.collection('clients').get(),
+        ]);
+
+        const proformas = proformasSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const totalClientes = clientsSnap.size;
+
+        const activas   = proformas.filter(p => !['Entregado', 'Cancelado'].includes(p.status));
+        const cobradas  = proformas.filter(p => p.status === 'Entregado');
+        const totalVentas  = proformas.filter(p => p.status !== 'Cancelado').reduce((a, p) => a + (p.total || 0), 0);
+        const cobrado      = cobradas.reduce((a, p) => a + (p.total || 0), 0);
+        const porCobrar    = activas.reduce((a, p) => a + (p.total || 0), 0);
+
+        return { proformas, activas, totalVentas, cobrado, porCobrar, totalClientes };
+    } catch (e) {
+        console.error('Error leyendo GORRA:', e);
+        return null;
+    }
+}
+
+function updateGorrasCard(result) {
+    const gorras = projectsData.find(p => p.id === 'gorras');
+    gorras.balance = result.porCobrar;
+    gorras.lastUpdate = `${result.activas.length} proforma${result.activas.length !== 1 ? 's' : ''} activa${result.activas.length !== 1 ? 's' : ''}`;
+    calculateGlobalBalance();
+    renderProjects();
+}
+
+async function renderGorrasData() {
+    const list = document.getElementById('gorras-proformas-list');
+    list.innerHTML = '<li class="tx-empty">Cargando...</li>';
+
+    const result = await loadGorrasData();
+    if (!result) {
+        list.innerHTML = '<li class="tx-empty error-msg">⚠️ Error al leer datos de GORRA.</li>';
+        return;
+    }
+
+    const { activas, totalVentas, cobrado, porCobrar, totalClientes } = result;
+    document.getElementById('gorras-total-ventas').textContent = formatSoles(totalVentas);
+    document.getElementById('gorras-cobrado').textContent     = formatSoles(cobrado);
+    document.getElementById('gorras-pendiente').textContent   = formatSoles(porCobrar);
+    document.getElementById('gorras-clientes').textContent    = totalClientes;
+    updateGorrasCard(result);
+
+    if (activas.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin proformas activas.</li>';
+        return;
+    }
+
+    const statusColor = {
+        'Cotización':       'estado-inactivo',
+        'Pendiente de Pago':'estado-vencido',
+        'Procesando':       'estado-activo',
+        'Enviado':          'estado-activo',
+    };
+
+    list.innerHTML = activas.slice(0, 10).map(p => `
+        <li class="sponsor-item">
+            <div class="sponsor-left">
+                <span class="sponsor-name">${p.clientName || 'Cliente'}</span>
+                <span class="sponsor-detail">${p.number || p.id?.slice(-6)} · ${p.createdAt?.slice(0, 10) || ''}</span>
+            </div>
+            <div class="sponsor-right">
+                <span class="sponsor-badge ${statusColor[p.status] || 'estado-inactivo'}">${p.status}</span>
+                <span class="sponsor-amount">${formatSoles(p.total || 0)}</span>
+            </div>
+        </li>
+    `).join('');
+}
+
+function initGorrasForm() {
+    const form    = document.getElementById('form-gorras-auth');
+    const errorEl = document.getElementById('gorras-auth-error');
+    const btn     = document.getElementById('btn-gorras-connect');
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Conectando...';
+        errorEl.style.display = 'none';
+
+        try {
+            const result = await gorrasAuth.signInWithEmailAndPassword(
+                document.getElementById('gorras-email').value,
+                document.getElementById('gorras-password').value
+            );
+            showGorrasData(result.user);
+            await renderGorrasData();
+        } catch {
+            errorEl.textContent = 'Credenciales incorrectas. Verifica tu correo y contraseña.';
+            errorEl.style.display = 'block';
+        }
+
+        btn.textContent = 'Conectar TODO PARA GORRA';
+        btn.disabled = false;
+    };
+
+    document.getElementById('btn-gorras-disconnect').onclick = async () => {
+        await gorrasAuth.signOut();
+        showGorrasConnect();
+        const gorras = projectsData.find(p => p.id === 'gorras');
+        gorras.balance = 0;
+        gorras.lastUpdate = 'Sin conectar';
+        calculateGlobalBalance();
+        renderProjects();
+    };
+}
+
 // === MÓDULO: Radio La Nueva 540 ===
 async function openRadioModal() {
     document.getElementById('modal-radio').classList.add('active');
@@ -557,6 +718,8 @@ function initDashboard() {
     initManualForm();
     initFirebase();
     initCerebroForm();
+    initGorrasFirebase();
+    initGorrasForm();
     initRadioForm();
     loadRadioBalance();
 }

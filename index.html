@@ -188,6 +188,70 @@
         </div>
 
         <!-- ==========================================
+             MODAL: TODO PARA GORRA — Proformas & Ventas
+        =========================================== -->
+        <div id="modal-gorras" class="modal">
+            <div class="modal-content modal-wide glass">
+                <header>
+                    <h2>🧢 TODO PARA GORRA — Proformas & Ventas</h2>
+                    <span class="close-btn">&times;</span>
+                </header>
+
+                <!-- Estado: no conectado -->
+                <div id="gorras-connect-form">
+                    <p class="connect-desc">Ingresa tus credenciales de Firebase para conectar TODO PARA GORRA con MAESTRO.</p>
+                    <form id="form-gorras-auth">
+                        <div class="form-group">
+                            <label>Correo electrónico</label>
+                            <input type="email" id="gorras-email" placeholder="tu@correo.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña</label>
+                            <input type="password" id="gorras-password" placeholder="••••••••" required>
+                        </div>
+                        <p id="gorras-auth-error" class="error-msg" style="display:none"></p>
+                        <button type="submit" class="btn-primary" id="btn-gorras-connect">Conectar TODO PARA GORRA</button>
+                    </form>
+                </div>
+
+                <!-- Estado: conectado -->
+                <div id="gorras-data" style="display:none">
+                    <div class="connected-bar">
+                        <span class="connect-badge">✅ Conectado</span>
+                        <span id="gorras-user-email" class="connect-email"></span>
+                        <button class="btn-disconnect" id="btn-gorras-disconnect">Desconectar</button>
+                    </div>
+
+                    <div class="module-summary">
+                        <div class="summary-item">
+                            <small>Total Proformas</small>
+                            <strong id="gorras-total-ventas">S/ 0.00</strong>
+                        </div>
+                        <div class="summary-item">
+                            <small>Entregado / Cobrado</small>
+                            <strong id="gorras-cobrado" class="text-success">S/ 0.00</strong>
+                        </div>
+                        <div class="summary-item">
+                            <small>Por Cobrar</small>
+                            <strong id="gorras-pendiente" class="text-warning">S/ 0.00</strong>
+                        </div>
+                        <div class="summary-item">
+                            <small>Clientes</small>
+                            <strong id="gorras-clientes">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3 class="section-label">Proformas Activas</h3>
+                        <ul id="gorras-proformas-list">
+                            <li class="tx-empty">Cargando...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
              MODAL: Radio La Nueva 540 — Auspiciadores
         =========================================== -->
         <div id="modal-radio" class="modal">
