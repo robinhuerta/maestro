@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAESTRO | Command Center</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Background Overlay -->
+        <div class="bg-gradient"></div>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-m">M</span>
+                <span class="logo-text">MAESTRO</span>
+            </div>
+            <nav>
+                <a href="#" class="active" id="nav-dashboard">Panel Control</a>
+                <a href="#" id="nav-accounts">Cuentas Globales</a>
+                <a href="#" id="nav-projects">Mis Negocios</a>
+                <a href="#" id="nav-settings">Configuración</a>
+            </nav>
+            <div class="system-status">
+                <div class="status-indicator online"></div>
+                <span>Sistemas Sincronizados</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <div class="welcome">
+                    <h1>Buenos Días, Administrador</h1>
+                    <p>Hoy es <span id="current-date"></span></p>
+                </div>
+                <div class="global-stats-header">
+                    <div class="stat-header-item">
+                        <small>Balance Total</small>
+                        <h3 id="total-balance">$0.00</h3>
+                    </div>
+                    <div class="user-profile">
+                        <div class="avatar">Admin</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Global Insights Section -->
+            <section class="insights">
+                <div class="insight-card glass">
+                    <div class="insight-info">
+                        <h3>Flujo de Caja</h3>
+                        <p class="value positive">+12.5%</p>
+                    </div>
+                </div>
+                <div class="insight-card glass">
+                    <div class="insight-info">
+                        <h3>Proyectos Activos</h3>
+                        <p class="value">8</p>
+                    </div>
+                </div>
+                <div class="insight-card glass">
+                    <div class="insight-info">
+                        <h3>Alertas Sistema</h3>
+                        <p class="value warning">2 Pendientes</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Projects Grid -->
+            <section class="projects-section">
+                <div class="section-header">
+                    <h2>Mis Proyectos & Negocios</h2>
+                    <button class="btn-primary" id="btn-add-project">Conciliar Cuentas</button>
+                </div>
+                <div id="projects-grid" class="projects-grid">
+                    <!-- Cards will be injected by app.js -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Manual Entry Modal -->
+        <div id="modal-manual" class="modal">
+            <div class="modal-content glass">
+                <header>
+                    <h2 id="modal-title">Gestión Manual: Word Capas</h2>
+                    <span class="close-btn">&times;</span>
+                </header>
+                <form id="form-manual">
+                    <div class="form-group">
+                        <label>Cliente</label>
+                        <input type="text" id="m-client" placeholder="Nombre del cliente" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo de Transacción</label>
+                            <select id="m-type">
+                                <option value="entrega">Entrega de Mercadería</option>
+                                <option value="cobranza">Cobranza (Pago)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Monto</label>
+                            <input type="number" id="m-amount" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="m-date" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Registrar Movimiento</button>
+                </form>
+                
+                <div class="recent-transactions">
+                    <h3>Últimos Movimientos</h3>
+                    <ul id="transaction-list">
+                        <!-- List of transactions -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
