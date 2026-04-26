@@ -57,9 +57,10 @@ const projectsData = [
         name: 'CRM IA Textil',
         icon: '🧵',
         status: 'online',
-        lastUpdate: 'Supabase conectado',
+        lastUpdate: 'Cargando...',
         balance: 0,
-        path: '#'
+        path: '#',
+        modalId: 'modal-crm'
     },
     {
         id: 'entrust',
@@ -174,6 +175,8 @@ function openProjectModal(modalId) {
         openCerebroModal();
     } else if (modalId === 'modal-gorras') {
         openGorrasModal();
+    } else if (modalId === 'modal-crm') {
+        openCrmModal();
     } else {
         document.getElementById(modalId)?.classList.add('active');
     }
@@ -568,6 +571,142 @@ function initGorrasForm() {
     };
 }
 
+// === MÓDULO: CRM IA Textil (mismo Supabase que Radio) ===
+const CRM_ETAPA_LABEL = {
+    new_lead:    'Nuevo Lead',
+    quote:       'Cotización',
+    negotiation: 'Negociación',
+    logistics:   'Logística',
+    closed_won:  'Ganado',
+    closed_lost: 'Perdido',
+};
+
+const CRM_ETAPA_COLOR = {
+    new_lead:    'estado-inactivo',
+    quote:       'estado-inactivo',
+    negotiation: 'estado-vencido',
+    logistics:   'estado-activo',
+    closed_won:  'estado-activo',
+    closed_lost: 'estado-inactivo',
+};
+
+async function openCrmModal() {
+    document.getElementById('modal-crm').classList.add('active');
+    await renderCrmData();
+}
+
+async function loadCrmNegocios() {
+    const { data, error } = await supabaseClient
+        .from('crm_negocios')
+        .select('*')
+        .order('created_at', { ascending: false });
+    if (error) { console.error('Error CRM:', error.message); return null; }
+    return data || [];
+}
+
+async function renderCrmData() {
+    const list = document.getElementById('crm-negocios-list');
+    list.innerHTML = '<li class="tx-empty">Cargando...</li>';
+
+    const data = await loadCrmNegocios();
+    if (data === null) {
+        list.innerHTML = '<li class="tx-empty error-msg">⚠️ Error al conectar. Verifica que la tabla exista.</li>';
+        return;
+    }
+
+    const activos    = data.filter(n => n.etapa !== 'closed_lost');
+    const ganados    = data.filter(n => n.etapa === 'closed_won');
+    const negociando = data.filter(n => n.etapa === 'negotiation');
+
+    const pipelineTotal = activos.reduce((a, n) => a + (parseFloat(n.valor) || 0), 0);
+    const totalGanado   = ganados.reduce((a, n) => a + (parseFloat(n.valor) || 0), 0);
+    const totalNeg      = negociando.reduce((a, n) => a + (parseFloat(n.valor) || 0), 0);
+
+    document.getElementById('crm-pipeline-total').textContent = formatSoles(pipelineTotal);
+    document.getElementById('crm-ganado').textContent         = formatSoles(totalGanado);
+    document.getElementById('crm-negociacion').textContent    = formatSoles(totalNeg);
+    document.getElementById('crm-count').textContent          = activos.length;
+
+    const crm = projectsData.find(p => p.id === 'crm-textil');
+    crm.balance    = pipelineTotal;
+    crm.lastUpdate = `${activos.length} negocio${activos.length !== 1 ? 's' : ''} activo${activos.length !== 1 ? 's' : ''}`;
+    calculateGlobalBalance();
+    renderProjects();
+
+    if (data.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin negocios registrados aún.</li>';
+        return;
+    }
+
+    list.innerHTML = activos.slice(0, 10).map(n => `
+        <li class="sponsor-item">
+            <div class="sponsor-left">
+                <span class="sponsor-name">${n.cliente}${n.empresa ? ` — ${n.empresa}` : ''}</span>
+                ${n.producto ? `<span class="sponsor-detail">${n.producto}</span>` : ''}
+                ${n.telefono ? `<span class="sponsor-detail">📞 ${n.telefono}</span>` : ''}
+            </div>
+            <div class="sponsor-right">
+                <span class="sponsor-badge ${CRM_ETAPA_COLOR[n.etapa] || 'estado-inactivo'}">${CRM_ETAPA_LABEL[n.etapa] || n.etapa}</span>
+                <span class="sponsor-amount">${formatSoles(parseFloat(n.valor) || 0)}</span>
+                <button class="btn-delete-tx" onclick="deleteCrmNegocio('${n.id}')" title="Eliminar">✕</button>
+            </div>
+        </li>
+    `).join('');
+}
+
+async function deleteCrmNegocio(id) {
+    if (!confirm('¿Eliminar este negocio?')) return;
+    const { error } = await supabaseClient.from('crm_negocios').delete().eq('id', id);
+    if (error) { alert('Error al eliminar: ' + error.message); return; }
+    await renderCrmData();
+}
+
+function initCrmForm() {
+    const form = document.getElementById('form-crm-negocio');
+    const btn  = document.getElementById('btn-add-negocio');
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        const negocio = {
+            cliente:  document.getElementById('crm-cliente').value.trim(),
+            producto: document.getElementById('crm-producto').value.trim() || null,
+            valor:    parseFloat(document.getElementById('crm-valor').value) || 0,
+            etapa:    document.getElementById('crm-etapa').value,
+            telefono: document.getElementById('crm-telefono').value.trim() || null,
+            prioridad:document.getElementById('crm-prioridad').value,
+            notas:    document.getElementById('crm-notas').value.trim() || null,
+        };
+
+        const { error } = await supabaseClient.from('crm_negocios').insert([negocio]);
+        if (error) {
+            alert('Error al guardar: ' + error.message);
+        } else {
+            btn.textContent = '✅ Guardado';
+            form.reset();
+            await renderCrmData();
+            setTimeout(() => { btn.textContent = '+ Registrar Negocio'; btn.disabled = false; }, 1500);
+            return;
+        }
+        btn.textContent = '+ Registrar Negocio';
+        btn.disabled = false;
+    };
+}
+
+async function loadCrmBalance() {
+    const data = await loadCrmNegocios();
+    if (!data) return;
+    const activos = data.filter(n => n.etapa !== 'closed_lost');
+    const total   = activos.reduce((a, n) => a + (parseFloat(n.valor) || 0), 0);
+    const crm = projectsData.find(p => p.id === 'crm-textil');
+    crm.balance    = total;
+    crm.lastUpdate = `${activos.length} negocio${activos.length !== 1 ? 's' : ''} activo${activos.length !== 1 ? 's' : ''}`;
+    calculateGlobalBalance();
+    renderProjects();
+}
+
 // === MÓDULO: Radio La Nueva 540 ===
 async function openRadioModal() {
     document.getElementById('modal-radio').classList.add('active');
@@ -720,8 +859,10 @@ function initDashboard() {
     initCerebroForm();
     initGorrasFirebase();
     initGorrasForm();
+    initCrmForm();
     initRadioForm();
     loadRadioBalance();
+    loadCrmBalance();
 }
 
 document.addEventListener('DOMContentLoaded', initDashboard);

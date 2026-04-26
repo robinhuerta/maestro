@@ -252,6 +252,97 @@
         </div>
 
         <!-- ==========================================
+             MODAL: CRM IA Textil — Pipeline de Ventas
+        =========================================== -->
+        <div id="modal-crm" class="modal">
+            <div class="modal-content modal-wide glass">
+                <header>
+                    <h2>🧵 CRM IA Textil — Pipeline de Ventas</h2>
+                    <span class="close-btn">&times;</span>
+                </header>
+
+                <div class="module-summary">
+                    <div class="summary-item">
+                        <small>Pipeline Total</small>
+                        <strong id="crm-pipeline-total">S/ 0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>Cerrado / Ganado</small>
+                        <strong id="crm-ganado" class="text-success">S/ 0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>En Negociación</small>
+                        <strong id="crm-negociacion" class="text-warning">S/ 0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>Negocios Activos</small>
+                        <strong id="crm-count">0</strong>
+                    </div>
+                </div>
+
+                <!-- Lista de negocios activos -->
+                <div class="module-section">
+                    <h3 class="section-label">Negocios en Pipeline</h3>
+                    <ul id="crm-negocios-list">
+                        <li class="tx-empty">Cargando...</li>
+                    </ul>
+                </div>
+
+                <!-- Formulario nuevo negocio -->
+                <div class="module-section">
+                    <h3 class="section-label">Registrar Negocio</h3>
+                    <form id="form-crm-negocio">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Cliente / Empresa *</label>
+                                <input type="text" id="crm-cliente" placeholder="Ej: Confecciones Lima SAC" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Producto / Máquina</label>
+                                <input type="text" id="crm-producto" placeholder="Ej: Bordadora ZSK 6 cabezas">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Valor (S/) *</label>
+                                <input type="number" id="crm-valor" step="0.01" placeholder="45000.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Etapa</label>
+                                <select id="crm-etapa">
+                                    <option value="new_lead">Nuevo Lead</option>
+                                    <option value="quote">Cotización</option>
+                                    <option value="negotiation">Negociación</option>
+                                    <option value="logistics">Logística</option>
+                                    <option value="closed_won">Cerrado Ganado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="text" id="crm-telefono" placeholder="999 999 999">
+                            </div>
+                            <div class="form-group">
+                                <label>Prioridad</label>
+                                <select id="crm-prioridad">
+                                    <option value="medium">Media</option>
+                                    <option value="high">Alta</option>
+                                    <option value="low">Baja</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Notas</label>
+                            <input type="text" id="crm-notas" placeholder="Observaciones del negocio">
+                        </div>
+                        <button type="submit" class="btn-primary" id="btn-add-negocio">+ Registrar Negocio</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
              MODAL: Radio La Nueva 540 — Auspiciadores
         =========================================== -->
         <div id="modal-radio" class="modal">
