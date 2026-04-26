@@ -848,6 +848,152 @@ async function loadRadioBalance() {
     updateRadioCard(totalMensual, data.length);
 }
 
+// === NAVEGACIÓN ===
+function navigateTo(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
+    document.getElementById(`page-${pageId}`).classList.add('page-active');
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById(`nav-${pageId}`).classList.add('active');
+    if (pageId === 'accounts') renderAccountsPage();
+    if (pageId === 'projects') renderProjectsPage();
+    if (pageId === 'settings') renderSettingsPage();
+}
+
+// === PAGE: Cuentas Globales ===
+function renderAccountsPage() {
+    const total    = projectsData.reduce((acc, p) => acc + (p.balance || 0), 0);
+    const active   = projectsData.filter(p => p.status === 'online' || p.status === 'manual').length;
+    const building = projectsData.filter(p => p.status === 'building').length;
+
+    document.getElementById('acc-total-balance').textContent  = formatSoles(total);
+    document.getElementById('acc-active-count').textContent   = active;
+    document.getElementById('acc-building-count').textContent = building;
+    document.getElementById('accounts-total-row').textContent = formatSoles(total);
+
+    document.getElementById('accounts-rows').innerHTML = projectsData.map(p => `
+        <tr>
+            <td><span style="margin-right:8px;">${p.icon}</span>${p.name}</td>
+            <td>
+                <span class="status-dot" style="background:${getStatusColor(p.status)};display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;"></span>
+                ${getStatusLabel(p.status)}
+            </td>
+            <td class="acc-dim">${p.lastUpdate}</td>
+            <td class="acc-amount">${formatSoles(p.balance)}</td>
+        </tr>
+    `).join('');
+
+    const list = document.getElementById('acc-transactions');
+    if (manualTransactions.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin movimientos en Word Caps.</li>';
+        return;
+    }
+    list.innerHTML = manualTransactions.slice(0, 6).map(tx => `
+        <li class="transaction-item">
+            <span class="t-date">${tx.date}</span>
+            <span class="t-client">${tx.client}</span>
+            <span class="t-type-${tx.type}">${tx.type === 'entrega' ? '📦 Entrega' : '💰 Cobro'}</span>
+            <span class="t-amount ${tx.type === 'cobranza' ? 'positive' : 'negative'}">
+                ${tx.type === 'cobranza' ? '+' : '-'}${formatSoles(tx.amount)}
+            </span>
+        </li>
+    `).join('');
+}
+
+// === PAGE: Mis Negocios ===
+const PROJECT_DESC = {
+    'radio':     'Gestión de auspiciadores, eventos y saludos en vivo.',
+    'cosmos':    'Plataforma de streaming tipo Netflix. En construcción.',
+    'cerebro':   'ERP completo: órdenes de producción, inventario, finanzas y cobros.',
+    'gorras':    'Importación y venta de gorras y maquinaria textil.',
+    'crm-textil':'CRM con IA para leads y pipeline de ventas del sector textil.',
+    'entrust':   'Catálogo de productos. Sin backend aún.',
+    'word-caps': 'Registro manual de entregas y cobranzas.',
+};
+
+function renderProjectsPage() {
+    const total    = projectsData.length;
+    const active   = projectsData.filter(p => p.status === 'online' || p.status === 'manual').length;
+    const building = projectsData.filter(p => p.status === 'building').length;
+
+    document.getElementById('biz-total').textContent    = total;
+    document.getElementById('biz-active').textContent   = active;
+    document.getElementById('biz-building').textContent = building;
+
+    document.getElementById('biz-list').innerHTML = projectsData.map(p => {
+        let btn;
+        if (p.modalId)      btn = `<button class="btn-view" onclick="navigateTo('dashboard');setTimeout(()=>openProjectModal('${p.modalId}'),50)">Gestionar →</button>`;
+        else if (p.isManual) btn = `<button class="btn-view" onclick="navigateTo('dashboard');setTimeout(()=>openManualModal(),50)">Gestionar →</button>`;
+        else if (p.path && p.path !== '#') btn = `<a href="${p.path}" class="btn-view" target="_blank" rel="noopener">Abrir →</a>`;
+        else btn = `<span class="btn-view btn-disabled">Próximamente</span>`;
+
+        return `
+        <div class="biz-row glass">
+            <div class="biz-row-left">
+                <span class="biz-icon">${p.icon}</span>
+                <div>
+                    <h3 class="biz-name">${p.name}</h3>
+                    <p class="biz-desc">${PROJECT_DESC[p.id] || ''}</p>
+                </div>
+            </div>
+            <div class="biz-row-right">
+                <span class="sponsor-badge ${p.status === 'online' ? 'estado-activo' : p.status === 'manual' ? 'estado-inactivo' : 'estado-inactivo'}">${getStatusLabel(p.status)}</span>
+                <span class="biz-balance">${formatSoles(p.balance)}</span>
+                ${btn}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// === PAGE: Configuración ===
+function renderSettingsPage() {
+    const savedName = localStorage.getItem('maestro_admin_name') || '';
+    document.getElementById('settings-name').value = savedName;
+
+    const erpUser    = typeof erpAuth !== 'undefined' ? erpAuth.currentUser : null;
+    const gorrasUser = typeof gorrasAuth !== 'undefined' ? gorrasAuth.currentUser : null;
+
+    document.getElementById('settings-connections').innerHTML = `
+        <div class="conn-row">
+            <span>🧠 CEREBRO ERP</span>
+            ${erpUser
+                ? `<span class="connect-badge">✅ ${erpUser.email}</span><button class="btn-disconnect" onclick="erpAuth.signOut();renderSettingsPage();renderProjects();">Desconectar</button>`
+                : `<span class="sponsor-badge estado-inactivo">Sin conectar</span><button class="btn-primary" style="padding:4px 14px;font-size:0.8rem;" onclick="navigateTo('dashboard');setTimeout(openCerebroModal,50)">Conectar</button>`}
+        </div>
+        <div class="conn-row">
+            <span>🧢 TODO PARA GORRA</span>
+            ${gorrasUser
+                ? `<span class="connect-badge">✅ ${gorrasUser.email}</span><button class="btn-disconnect" onclick="gorrasAuth.signOut();renderSettingsPage();renderProjects();">Desconectar</button>`
+                : `<span class="sponsor-badge estado-inactivo">Sin conectar</span><button class="btn-primary" style="padding:4px 14px;font-size:0.8rem;" onclick="navigateTo('dashboard');setTimeout(openGorrasModal,50)">Conectar</button>`}
+        </div>
+    `;
+
+    document.getElementById('settings-links').innerHTML = projectsData
+        .filter(p => p.path && p.path !== '#' && !p.isManual)
+        .map(p => `
+            <a href="${p.path}" class="quick-link" target="_blank" rel="noopener">
+                <span>${p.icon}</span><span>${p.name}</span><span style="color:var(--primary);">→</span>
+            </a>
+        `).join('');
+
+    document.getElementById('btn-save-settings').onclick = () => {
+        const name = document.getElementById('settings-name').value.trim();
+        if (!name) return;
+        localStorage.setItem('maestro_admin_name', name);
+        applyAdminName(name);
+        const btn = document.getElementById('btn-save-settings');
+        btn.textContent = '✅ Guardado';
+        setTimeout(() => btn.textContent = 'Guardar', 1500);
+    };
+}
+
+function applyAdminName(name) {
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Buenos Días' : hour < 18 ? 'Buenas Tardes' : 'Buenas Noches';
+    const initials = name.slice(0, 2).toUpperCase();
+    document.getElementById('welcome-title').textContent  = `${greeting}, ${name}`;
+    document.getElementById('avatar-initials').textContent = initials;
+}
+
 // === INIT ===
 function initDashboard() {
     renderDate();
@@ -863,6 +1009,8 @@ function initDashboard() {
     initRadioForm();
     loadRadioBalance();
     loadCrmBalance();
+    const savedName = localStorage.getItem('maestro_admin_name');
+    if (savedName) applyAdminName(savedName);
 }
 
 document.addEventListener('DOMContentLoaded', initDashboard);

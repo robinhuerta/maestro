@@ -639,6 +639,171 @@ input:focus, select:focus {
     white-space: nowrap;
 }
 
+/* === PÁGINAS (navegación) === */
+.page { display: none; }
+.page.page-active { display: block; }
+
+.page-top { margin-bottom: 2rem; padding-top: 0.5rem; }
+.page-top h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.4rem; }
+.page-subtitle { color: var(--text-dim); font-size: 0.9rem; }
+
+/* === CUENTAS GLOBALES === */
+.balance-hero {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.accounts-table-wrap {
+    padding: 1.5rem;
+}
+
+.accounts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.accounts-table th {
+    text-align: left;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.accounts-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.accounts-table tfoot td {
+    font-weight: 700;
+    color: var(--primary);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: none;
+}
+
+.acc-dim { color: var(--text-dim); font-size: 0.82rem; }
+.acc-amount { text-align: right; font-weight: 700; }
+
+/* === MIS NEGOCIOS === */
+.biz-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.biz-stat-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    text-align: center;
+}
+
+.biz-stat-card small { color: var(--text-dim); font-size: 0.8rem; }
+
+.biz-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.biz-row-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.biz-icon { font-size: 1.8rem; flex-shrink: 0; }
+.biz-name { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+.biz-desc { font-size: 0.8rem; color: var(--text-dim); }
+
+.biz-row-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.biz-balance { font-weight: 700; font-size: 1rem; color: var(--success); }
+
+/* === CONFIGURACIÓN === */
+.settings-section {
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.settings-section h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+}
+
+.conn-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--glass-border);
+    flex-wrap: wrap;
+}
+
+.conn-row:last-child { border-bottom: none; }
+.conn-row > span:first-child { flex: 1; font-size: 0.9rem; }
+
+.quick-links { display: flex; flex-direction: column; gap: 8px; }
+
+.quick-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.quick-link:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.quick-link span:nth-child(2) { flex: 1; }
+
+.sys-info { display: flex; flex-direction: column; gap: 10px; }
+
+.sys-info div {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.sys-info div span:first-child { color: var(--text-dim); }
+.sys-info div span:last-child { font-weight: 600; }
+
 /* === CEREBRO ERP — Connect / Disconnect === */
 .connect-desc {
     color: var(--text-dim);
