@@ -49,7 +49,7 @@ const projectsData = [
         status: 'online',
         lastUpdate: 'Sin conectar',
         balance: 0,
-        path: 'https://todo-para-gorra.vercel.app',
+        path: 'https://todo-para-gorra-crm.vercel.app/login',
         modalId: 'modal-gorras'
     },
     {
