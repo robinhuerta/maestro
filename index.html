@@ -9,9 +9,8 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Background Overlay -->
         <div class="bg-gradient"></div>
-        
+
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
@@ -40,7 +39,7 @@
                 <div class="global-stats-header">
                     <div class="stat-header-item">
                         <small>Balance Total</small>
-                        <h3 id="total-balance">$0.00</h3>
+                        <h3 id="total-balance">S/ 0.00</h3>
                     </div>
                     <div class="user-profile">
                         <div class="avatar">Admin</div>
@@ -48,24 +47,24 @@
                 </div>
             </header>
 
-            <!-- Global Insights Section -->
+            <!-- Insights -->
             <section class="insights">
                 <div class="insight-card glass">
                     <div class="insight-info">
                         <h3>Flujo de Caja</h3>
-                        <p class="value positive">+12.5%</p>
+                        <p class="value positive" id="insight-cashflow">+0%</p>
                     </div>
                 </div>
                 <div class="insight-card glass">
                     <div class="insight-info">
                         <h3>Proyectos Activos</h3>
-                        <p class="value">8</p>
+                        <p class="value" id="insight-projects">0</p>
                     </div>
                 </div>
                 <div class="insight-card glass">
                     <div class="insight-info">
                         <h3>Alertas Sistema</h3>
-                        <p class="value warning">2 Pendientes</p>
+                        <p class="value warning" id="insight-alerts">0 Pendientes</p>
                     </div>
                 </div>
             </section>
@@ -76,21 +75,19 @@
                     <h2>Mis Proyectos & Negocios</h2>
                     <button class="btn-primary" id="btn-add-project">Conciliar Cuentas</button>
                 </div>
-                <div id="projects-grid" class="projects-grid">
-                    <!-- Cards will be injected by app.js -->
-                </div>
+                <div id="projects-grid" class="projects-grid"></div>
             </section>
         </main>
 
-        <!-- Manual Entry Modal -->
+        <!-- ==========================================
+             MODAL: Word Caps (entrada manual)
+        =========================================== -->
         <div id="modal-manual" class="modal">
             <div class="modal-content glass">
                 <header>
-                    <h2 id="modal-title">🌍 Word Caps — Gestión de Cuentas</h2>
+                    <h2>🌍 Word Caps — Gestión de Cuentas</h2>
                     <span class="close-btn">&times;</span>
                 </header>
-
-                <!-- Balance resumen -->
                 <div class="wc-balance-summary">
                     <span>Balance Actual:</span>
                     <strong id="wc-total">S/ 0.00</strong>
@@ -119,16 +116,98 @@
                     </div>
                     <button type="submit" class="btn-primary">Registrar Movimiento</button>
                 </form>
-                
                 <div class="recent-transactions">
                     <h3>Últimos Movimientos</h3>
-                    <ul id="transaction-list">
-                        <!-- List of transactions -->
-                    </ul>
+                    <ul id="transaction-list"></ul>
                 </div>
             </div>
         </div>
+
+        <!-- ==========================================
+             MODAL: Radio La Nueva 540 — Auspiciadores
+        =========================================== -->
+        <div id="modal-radio" class="modal">
+            <div class="modal-content modal-wide glass">
+                <header>
+                    <h2>📻 Radio La Nueva 540 — Auspiciadores</h2>
+                    <span class="close-btn">&times;</span>
+                </header>
+
+                <div class="module-summary">
+                    <div class="summary-item">
+                        <small>Ingreso Mensual</small>
+                        <strong id="radio-total-mensual">S/ 0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>Auspiciadores Activos</small>
+                        <strong id="radio-count-activos">0</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>Estado</small>
+                        <strong class="text-success" id="radio-estado">En Vivo</strong>
+                    </div>
+                </div>
+
+                <!-- Lista -->
+                <div class="module-section">
+                    <h3 class="section-label">Auspiciadores Actuales</h3>
+                    <ul id="auspiciadores-list">
+                        <li class="tx-empty">Cargando...</li>
+                    </ul>
+                </div>
+
+                <!-- Formulario -->
+                <div class="module-section">
+                    <h3 class="section-label">Agregar Auspiciador</h3>
+                    <form id="form-auspiciador">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nombre / Empresa *</label>
+                                <input type="text" id="sp-nombre" placeholder="Ej: Ferretería Pérez" required>
+                            </div>
+                            <div class="form-group">
+                                <label>RUC / DNI</label>
+                                <input type="text" id="sp-ruc" placeholder="20123456789">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="text" id="sp-telefono" placeholder="999 999 999">
+                            </div>
+                            <div class="form-group">
+                                <label>Monto Mensual (S/) *</label>
+                                <input type="number" id="sp-monto" step="0.01" placeholder="500.00" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tipo de Pauta</label>
+                                <input type="text" id="sp-pauta" placeholder="Ej: 3 cuñas diarias">
+                            </div>
+                            <div class="form-group">
+                                <label>Estado</label>
+                                <select id="sp-estado">
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                    <option value="vencido">Vencido</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Notas</label>
+                            <input type="text" id="sp-notas" placeholder="Observaciones adicionales">
+                        </div>
+                        <button type="submit" class="btn-primary" id="btn-add-sponsor">+ Agregar Auspiciador</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 </body>
 </html>

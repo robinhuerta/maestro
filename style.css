@@ -498,3 +498,154 @@ input:focus, select:focus {
 .project-card {
     animation: fadeIn 0.5s ease forwards;
 }
+
+/* === MODAL WIDE (Radio, ERP, etc.) === */
+.modal-content.modal-wide {
+    width: 680px;
+    max-height: 88vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+
+/* === MODULE SUMMARY BAR === */
+.module-summary {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.2rem;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.summary-item small {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-item strong {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.text-success { color: var(--success) !important; }
+
+/* === MODULE SECTIONS === */
+.module-section {
+    margin-bottom: 2rem;
+}
+
+.module-section:last-child {
+    border-top: 1px solid var(--glass-border);
+    padding-top: 1.5rem;
+    margin-bottom: 0;
+}
+
+.section-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+/* === SPONSOR LIST === */
+#auspiciadores-list {
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+
+.sponsor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    gap: 1rem;
+    transition: border-color 0.2s;
+}
+
+.sponsor-item:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.sponsor-left {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.sponsor-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sponsor-detail {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+.sponsor-notes {
+    font-style: italic;
+}
+
+.sponsor-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.sponsor-badge {
+    font-size: 0.68rem;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.estado-activo  { background: rgba(34, 197, 94, 0.15);  color: var(--success); }
+.estado-inactivo{ background: rgba(148, 163, 184, 0.1); color: var(--text-dim); }
+.estado-vencido { background: rgba(239, 68, 68, 0.15);  color: var(--danger); }
+
+.sponsor-amount {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--success);
+    white-space: nowrap;
+}
+
+/* === MISC === */
+.btn-disabled {
+    opacity: 0.4;
+    cursor: default;
+    font-size: 0.8rem;
+}
+
+.error-msg {
+    color: var(--danger) !important;
+}
