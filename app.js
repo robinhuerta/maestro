@@ -393,8 +393,15 @@ function initCerebroForm() {
             );
             showERPData(result.user);
             await renderERPData();
-        } catch {
-            errorEl.textContent = 'Credenciales incorrectas. Verifica tu correo y contraseña de Firebase.';
+        } catch (err) {
+            const msg = err.code === 'auth/unauthorized-domain'
+                ? '⚠️ Dominio no autorizado. Agrega maetro.netlify.app en Firebase Console → Authentication → Settings → Authorized domains.'
+                : err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
+                ? 'Contraseña incorrecta.'
+                : err.code === 'auth/user-not-found'
+                ? 'No existe una cuenta con ese correo.'
+                : `Error: ${err.message}`;
+            errorEl.textContent = msg;
             errorEl.style.display = 'block';
         }
 
@@ -551,8 +558,15 @@ function initGorrasForm() {
             );
             showGorrasData(result.user);
             await renderGorrasData();
-        } catch {
-            errorEl.textContent = 'Credenciales incorrectas. Verifica tu correo y contraseña.';
+        } catch (err) {
+            const msg = err.code === 'auth/unauthorized-domain'
+                ? '⚠️ Dominio no autorizado. Agrega maetro.netlify.app en Firebase Console → Authentication → Settings → Authorized domains.'
+                : err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
+                ? 'Contraseña incorrecta.'
+                : err.code === 'auth/user-not-found'
+                ? 'No existe una cuenta con ese correo.'
+                : `Error: ${err.message}`;
+            errorEl.textContent = msg;
             errorEl.style.display = 'block';
         }
 
