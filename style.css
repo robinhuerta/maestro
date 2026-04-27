@@ -414,12 +414,13 @@ label {
 }
 
 input, select {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1e293b;
     border: 1px solid var(--glass-border);
     padding: 12px;
     border-radius: 8px;
     color: var(--text-main);
     outline: none;
+    color-scheme: dark;
 }
 
 input:focus, select:focus {
