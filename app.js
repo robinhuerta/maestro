@@ -83,25 +83,250 @@ const projectsData = [
     }
 ];
 
-// === WORD CAPS (localStorage) ===
-function loadTransactions() {
-    const saved = localStorage.getItem('maestro_word_capas_tx');
-    return saved ? JSON.parse(saved) : [];
+// === WORD CAPS — Sistema de Reventa (Supabase) ===
+let wcSelectedClient = null;
+
+async function wcLoadData() {
+    const { data, error } = await supabaseClient
+        .from('wc_movimientos')
+        .select('*')
+        .order('fecha', { ascending: false })
+        .order('created_at', { ascending: false });
+    if (error) { console.error('WC error:', error.message); return null; }
+    return data || [];
 }
 
-function saveTransactions() {
-    localStorage.setItem('maestro_word_capas_tx', JSON.stringify(manualTransactions));
+async function wcSaveMov(mov) {
+    const { error } = await supabaseClient.from('wc_movimientos').insert([mov]);
+    if (error) { alert('Error al guardar: ' + error.message); return false; }
+    return true;
 }
 
-function recalcWordCapsBalance() {
+async function wcDeleteMov(id) {
+    if (!confirm('¿Eliminar este movimiento?')) return;
+    const { error } = await supabaseClient.from('wc_movimientos').delete().eq('id', id);
+    if (error) { alert('Error al eliminar: ' + error.message); return; }
+    await wcRender();
+}
+
+function wcBuildClients(data) {
+    const map = {};
+    data.filter(m => m.tipo !== 'compra').forEach(m => {
+        if (!map[m.cliente]) map[m.cliente] = { entregado: 0, cobrado: 0, movs: [] };
+        if (m.tipo === 'entrega') map[m.cliente].entregado += parseFloat(m.monto);
+        else                      map[m.cliente].cobrado   += parseFloat(m.monto);
+        map[m.cliente].movs.push(m);
+    });
+    Object.values(map).forEach(cl => { cl.saldo = cl.entregado - cl.cobrado; });
+    return map;
+}
+
+function wcGetTotals(data) {
+    const invertido = data.filter(m => m.tipo === 'compra').reduce((a, m) => a + parseFloat(m.monto), 0);
+    const entregado = data.filter(m => m.tipo === 'entrega').reduce((a, m) => a + parseFloat(m.monto), 0);
+    const cobrado   = data.filter(m => m.tipo === 'cobro').reduce((a, m)   => a + parseFloat(m.monto), 0);
+    return { invertido, entregado, cobrado, porCobrar: entregado - cobrado, ganancia: cobrado - invertido };
+}
+
+async function wcRender() {
+    const data = await wcLoadData();
+    if (data === null) return;
+
+    const totals  = wcGetTotals(data);
+    const clients = wcBuildClients(data);
+
+    document.getElementById('wc-inv').textContent = formatSoles(totals.invertido);
+    document.getElementById('wc-ent').textContent = formatSoles(totals.entregado);
+    document.getElementById('wc-cob').textContent = formatSoles(totals.cobrado);
+    document.getElementById('wc-pen').textContent = formatSoles(totals.porCobrar);
+    const ganEl = document.getElementById('wc-gan');
+    ganEl.textContent = formatSoles(totals.ganancia);
+    ganEl.className   = totals.ganancia >= 0 ? 'text-success' : 'text-danger';
+
     const wc = projectsData.find(p => p.id === 'word-caps');
-    wc.balance = manualTransactions.reduce((acc, tx) => {
-        return tx.type === 'cobranza' ? acc + tx.amount : acc - tx.amount;
-    }, 0);
+    wc.balance    = totals.porCobrar;
+    wc.lastUpdate = `${Object.keys(clients).length} cliente${Object.keys(clients).length !== 1 ? 's' : ''}`;
+    calculateGlobalBalance();
+    renderProjects();
+
+    const container = document.getElementById('wc-clients-list');
+    const entries   = Object.entries(clients).sort((a, b) => b[1].saldo - a[1].saldo);
+
+    if (entries.length === 0) {
+        container.innerHTML = '<p class="wc-empty">Sin clientes aún.<br>Registra una entrega para comenzar.</p>';
+    } else {
+        container.innerHTML = entries.map(([name, cl]) => {
+            const dc  = cl.saldo > 200 ? 'wc-debt-high' : cl.saldo > 0 ? 'wc-debt-med' : 'wc-debt-ok';
+            const ico = cl.saldo > 200 ? '🔴' : cl.saldo > 0 ? '🟡' : '🟢';
+            const sel = wcSelectedClient === name ? 'wc-card-selected' : '';
+            const sn  = name.replace(/'/g, "\\'");
+            return `
+            <div class="wc-client-card ${dc} ${sel}" onclick="wcSelectClient('${sn}')">
+                <div class="wc-card-top">
+                    <span class="wc-client-name">${ico} ${name}</span>
+                    <span class="${cl.saldo > 0 ? 'text-warning' : 'text-success'}" style="font-weight:700;font-size:0.85rem;">
+                        ${cl.saldo > 0 ? 'Debe ' : '✅ '}${formatSoles(Math.abs(cl.saldo))}
+                    </span>
+                </div>
+                <div class="wc-card-detail">
+                    <span>Entregado: ${formatSoles(cl.entregado)}</span>
+                    <span>Cobrado: ${formatSoles(cl.cobrado)}</span>
+                </div>
+                ${cl.saldo > 0 ? `<button class="btn-cobrar-rapido" onclick="event.stopPropagation();wcOpenForm('cobro','${sn}')">💰 Cobrar ahora</button>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    if (wcSelectedClient && clients[wcSelectedClient]) {
+        wcRenderDetail(wcSelectedClient, clients[wcSelectedClient]);
+    }
 }
 
-let manualTransactions = loadTransactions();
-recalcWordCapsBalance();
+function wcSelectClient(name) {
+    wcSelectedClient = name;
+    wcRender();
+}
+
+function wcRenderDetail(name, cl) {
+    const panel = document.getElementById('wc-right-panel');
+    const sn = name.replace(/'/g, "\\'");
+    panel.innerHTML = `
+        <div class="wc-detail-header">
+            <h3>${name}</h3>
+            <div class="wc-detail-stats">
+                <span>📦 Entregado: <strong>${formatSoles(cl.entregado)}</strong></span>
+                <span>✅ Cobrado: <strong class="text-success">${formatSoles(cl.cobrado)}</strong></span>
+                <span class="${cl.saldo > 0 ? 'text-warning' : 'text-success'}">
+                    ${cl.saldo > 0 ? '⏳ Debe:' : '🟢'} <strong>${formatSoles(Math.abs(cl.saldo))}</strong>
+                </span>
+            </div>
+            <div class="wc-detail-btns">
+                <button class="btn-wc" onclick="wcOpenForm('entrega','${sn}')">📦 Nueva Entrega</button>
+                <button class="btn-wc" onclick="wcOpenForm('cobro','${sn}')">💰 Cobrar</button>
+            </div>
+        </div>
+        <p class="section-label" style="margin-top:1rem;margin-bottom:0.6rem;">Historial completo</p>
+        <ul class="wc-movs-list">
+            ${cl.movs.map(m => `
+            <li class="wc-mov-item ${m.tipo === 'cobro' ? 'wc-mov-cobro' : 'wc-mov-entrega'}">
+                <span class="wc-mov-icon">${m.tipo === 'cobro' ? '💰' : '📦'}</span>
+                <div class="wc-mov-info">
+                    <span class="wc-mov-desc">${m.descripcion || (m.tipo === 'cobro' ? 'Cobro' : 'Entrega')}</span>
+                    <span class="wc-mov-date">${m.fecha}</span>
+                </div>
+                <span class="wc-mov-amount ${m.tipo === 'cobro' ? 'text-success' : 'text-warning'}">
+                    ${m.tipo === 'cobro' ? '+' : '-'}${formatSoles(parseFloat(m.monto))}
+                </span>
+                <button class="btn-delete-tx" onclick="wcDeleteMov('${m.id}')" title="Eliminar">✕</button>
+            </li>`).join('')}
+        </ul>`;
+}
+
+function wcOpenForm(tipo, clientePrefill = '') {
+    const panel  = document.getElementById('wc-right-panel');
+    const today  = new Date().toISOString().split('T')[0];
+    const safeV  = clientePrefill.replace(/"/g, '&quot;');
+    const labels = { entrega: 'Registrar Entrega', cobro: 'Registrar Cobro', compra: 'Registrar Compra' };
+
+    let clienteField = tipo !== 'compra'
+        ? `<div class="form-group">
+               <label>Cliente</label>
+               <input type="text" id="wc-f-cliente" value="${safeV}" placeholder="Nombre del cliente" required>
+           </div>` : '';
+
+    let provField = tipo === 'compra'
+        ? `<div class="form-group">
+               <label>Proveedor</label>
+               <input type="text" id="wc-f-prov" placeholder="Ej: Gamarra, Distribuidora López">
+           </div>` : '';
+
+    const descPlaceholder = tipo === 'entrega'
+        ? 'Ej: 3 gorras snapback, 2 polos talla M'
+        : tipo === 'cobro'
+        ? 'Ej: Pago parcial, abono, pago completo'
+        : 'Ej: 50 gorras Gamarra, 20 polos Jirón';
+
+    const titulo = tipo === 'entrega' ? '📦 Nueva Entrega' : tipo === 'cobro' ? '💰 Registrar Cobro' : '🛍️ Compra de Stock';
+
+    panel.innerHTML = `
+        <div class="wc-form-block">
+            <h4>${titulo}</h4>
+            <form id="form-wc-active">
+                ${clienteField}
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input type="text" id="wc-f-desc" placeholder="${descPlaceholder}" ${tipo !== 'cobro' ? 'required' : ''}>
+                </div>
+                ${provField}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Monto (S/)</label>
+                        <input type="number" id="wc-f-monto" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="wc-f-fecha" value="${today}" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">${labels[tipo]}</button>
+            </form>
+        </div>`;
+
+    document.getElementById('form-wc-active').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type=submit]');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        const clienteVal = document.getElementById('wc-f-cliente')?.value?.trim() || null;
+        const mov = {
+            tipo,
+            monto:       parseFloat(document.getElementById('wc-f-monto').value),
+            descripcion: document.getElementById('wc-f-desc')?.value?.trim() || null,
+            fecha:       document.getElementById('wc-f-fecha').value,
+            cliente:     clienteVal,
+            proveedor:   document.getElementById('wc-f-prov')?.value?.trim() || null,
+        };
+
+        if (clienteVal) wcSelectedClient = clienteVal;
+
+        const ok = await wcSaveMov(mov);
+        if (ok) {
+            btn.textContent = '✅ Guardado';
+            const savedCliente = clienteVal;
+            e.target.reset();
+            document.getElementById('wc-f-fecha').value = today;
+            if (savedCliente && document.getElementById('wc-f-cliente')) {
+                document.getElementById('wc-f-cliente').value = savedCliente;
+            }
+            setTimeout(() => { btn.textContent = labels[tipo]; btn.disabled = false; }, 1200);
+        } else {
+            btn.disabled = false;
+            btn.textContent = labels[tipo];
+        }
+        await wcRender();
+    };
+}
+
+async function openManualModal() {
+    document.getElementById('modal-manual').classList.add('active');
+    wcSelectedClient = null;
+    document.getElementById('wc-right-panel').innerHTML =
+        '<p class="wc-hint">← Selecciona un cliente para ver su historial<br>o usa los botones de arriba para registrar</p>';
+    await wcRender();
+}
+
+async function loadWordCapsBalance() {
+    const data = await wcLoadData();
+    if (!data) return;
+    const totals  = wcGetTotals(data);
+    const clients = wcBuildClients(data);
+    const wc = projectsData.find(p => p.id === 'word-caps');
+    wc.balance    = totals.porCobrar;
+    wc.lastUpdate = `${Object.keys(clients).length} cliente${Object.keys(clients).length !== 1 ? 's' : ''}`;
+    calculateGlobalBalance();
+    renderProjects();
+}
 
 // === DASHBOARD CORE ===
 function renderDate() {
@@ -188,74 +413,6 @@ function initModalClose() {
             e.target.classList.remove('active');
         }
     });
-}
-
-// === MODAL: Word Caps ===
-function openManualModal() {
-    document.getElementById('modal-manual').classList.add('active');
-    renderTransactions();
-}
-
-function initManualForm() {
-    const form = document.getElementById('form-manual');
-    form.onsubmit = (e) => {
-        e.preventDefault();
-        const newTx = {
-            client: document.getElementById('m-client').value,
-            type: document.getElementById('m-type').value,
-            amount: parseFloat(document.getElementById('m-amount').value),
-            date: document.getElementById('m-date').value
-        };
-        manualTransactions.unshift(newTx);
-        saveTransactions();
-        recalcWordCapsBalance();
-
-        const btn = form.querySelector('button[type="submit"]');
-        btn.textContent = '✅ Registrado';
-        setTimeout(() => btn.textContent = 'Registrar Movimiento', 1500);
-
-        form.reset();
-        renderTransactions();
-        renderProjects();
-        calculateGlobalBalance();
-    };
-
-    document.getElementById('transaction-list').addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-delete-tx');
-        if (!btn) return;
-        const idx = parseInt(btn.dataset.index);
-        manualTransactions.splice(idx, 1);
-        saveTransactions();
-        recalcWordCapsBalance();
-        renderTransactions();
-        renderProjects();
-        calculateGlobalBalance();
-    });
-}
-
-function renderTransactions() {
-    const list = document.getElementById('transaction-list');
-    const wc = projectsData.find(p => p.id === 'word-caps');
-
-    if (manualTransactions.length === 0) {
-        list.innerHTML = '<li class="tx-empty">Sin movimientos registrados.</li>';
-        document.getElementById('wc-total').textContent = formatSoles(0);
-        return;
-    }
-
-    list.innerHTML = manualTransactions.map((tx, idx) => `
-        <li class="transaction-item">
-            <span class="t-date">${tx.date}</span>
-            <span class="t-client">${tx.client}</span>
-            <span class="t-type-${tx.type}">${tx.type === 'entrega' ? '📦 Entrega' : '💰 Cobro'}</span>
-            <span class="t-amount ${tx.type === 'cobranza' ? 'positive' : 'negative'}">
-                ${tx.type === 'cobranza' ? '+' : '-'}${formatSoles(tx.amount)}
-            </span>
-            <button class="btn-delete-tx" data-index="${idx}" title="Eliminar">✕</button>
-        </li>
-    `).join('');
-
-    document.getElementById('wc-total').textContent = formatSoles(wc.balance);
 }
 
 // === MÓDULO: CEREBRO ERP (Firebase) ===
@@ -894,20 +1051,24 @@ function renderAccountsPage() {
     `).join('');
 
     const list = document.getElementById('acc-transactions');
-    if (manualTransactions.length === 0) {
-        list.innerHTML = '<li class="tx-empty">Sin movimientos en Word Caps.</li>';
-        return;
-    }
-    list.innerHTML = manualTransactions.slice(0, 6).map(tx => `
-        <li class="transaction-item">
-            <span class="t-date">${tx.date}</span>
-            <span class="t-client">${tx.client}</span>
-            <span class="t-type-${tx.type}">${tx.type === 'entrega' ? '📦 Entrega' : '💰 Cobro'}</span>
-            <span class="t-amount ${tx.type === 'cobranza' ? 'positive' : 'negative'}">
-                ${tx.type === 'cobranza' ? '+' : '-'}${formatSoles(tx.amount)}
-            </span>
-        </li>
-    `).join('');
+    list.innerHTML = '<li class="tx-empty">Cargando movimientos...</li>';
+    wcLoadData().then(data => {
+        if (!data || data.length === 0) {
+            list.innerHTML = '<li class="tx-empty">Sin movimientos en Word Caps.</li>';
+            return;
+        }
+        const movs = data.filter(m => m.tipo !== 'compra').slice(0, 6);
+        list.innerHTML = movs.map(m => `
+            <li class="transaction-item">
+                <span class="t-date">${m.fecha}</span>
+                <span class="t-client">${m.cliente || '—'}</span>
+                <span class="t-type-${m.tipo === 'cobro' ? 'cobranza' : 'entrega'}">${m.tipo === 'cobro' ? '💰 Cobro' : '📦 Entrega'}</span>
+                <span class="t-amount ${m.tipo === 'cobro' ? 'positive' : 'negative'}">
+                    ${m.tipo === 'cobro' ? '+' : '-'}${formatSoles(parseFloat(m.monto))}
+                </span>
+            </li>
+        `).join('');
+    });
 }
 
 // === PAGE: Mis Negocios ===
@@ -1011,7 +1172,6 @@ function initDashboard() {
     renderProjects();
     calculateGlobalBalance();
     initModalClose();
-    initManualForm();
     initFirebase();
     initCerebroForm();
     initGorrasFirebase();
@@ -1020,6 +1180,7 @@ function initDashboard() {
     initRadioForm();
     loadRadioBalance();
     loadCrmBalance();
+    loadWordCapsBalance();
     const savedName = localStorage.getItem('maestro_admin_name');
     if (savedName) applyAdminName(savedName);
 }

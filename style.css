@@ -896,3 +896,197 @@ input:focus, select:focus {
 .error-msg {
     color: var(--danger) !important;
 }
+
+/* ================================================
+   WORD CAPS — Sistema de Reventa por Cliente
+   ================================================ */
+.modal-content.wc-modal {
+    width: 92vw;
+    max-width: 1120px;
+    max-height: 92vh;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-content.wc-modal:hover { transform: none; }
+
+.wc-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.2rem 1.8rem;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    margin-bottom: 0 !important;
+}
+
+.wc-header h2 { margin: 0; font-size: 1.1rem; white-space: nowrap; }
+
+.wc-header-actions { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+
+.btn-wc {
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.35);
+    color: var(--text-main);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-wc:hover { background: rgba(99,102,241,0.3); }
+.btn-wc-alt {
+    background: rgba(168,85,247,0.12);
+    border-color: rgba(168,85,247,0.35);
+}
+
+/* KPI bar */
+.wc-kpi-bar {
+    display: flex;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+.wc-kpi {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 0.4rem;
+    border-right: 1px solid var(--glass-border);
+    gap: 2px;
+    text-align: center;
+}
+.wc-kpi:last-child { border-right: none; }
+.wc-kpi small {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.wc-kpi strong { font-size: 1rem; font-weight: 700; color: var(--primary); }
+
+/* Body 2 columnas */
+.wc-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+.wc-left {
+    width: 290px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--glass-border);
+    overflow-y: auto;
+    padding: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+
+.wc-right {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+
+.wc-hint {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    text-align: center;
+    margin-top: 3rem;
+    line-height: 1.8;
+}
+
+.wc-empty {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 2rem 0;
+    line-height: 1.8;
+}
+
+/* Tarjetas de cliente */
+.wc-client-card {
+    padding: 11px 13px;
+    border-radius: 10px;
+    margin-bottom: 7px;
+    cursor: pointer;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.03);
+    transition: all 0.2s;
+}
+.wc-client-card:hover { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.06); }
+.wc-card-selected { border-color: var(--primary) !important; background: rgba(99,102,241,0.1) !important; }
+
+.wc-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.wc-client-name { font-weight: 600; font-size: 0.88rem; }
+
+.wc-card-detail {
+    display: flex;
+    gap: 10px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+}
+
+.btn-cobrar-rapido {
+    width: 100%;
+    padding: 4px 0;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 6px;
+    color: var(--success);
+    font-size: 0.76rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.btn-cobrar-rapido:hover { background: rgba(34,197,94,0.2); }
+
+.wc-debt-high { border-color: rgba(239,68,68,0.35) !important; }
+.wc-debt-med  { border-color: rgba(245,158,11,0.35) !important; }
+.wc-debt-ok   { border-color: rgba(34,197,94,0.25) !important; }
+
+/* Detalle de cliente */
+.wc-detail-header { margin-bottom: 0.8rem; }
+.wc-detail-header h3 { font-size: 1.25rem; margin-bottom: 0.7rem; }
+
+.wc-detail-stats {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    font-size: 0.86rem;
+    margin-bottom: 0.8rem;
+    padding: 0.8rem 1rem;
+    background: rgba(99,102,241,0.07);
+    border-radius: 10px;
+}
+
+.wc-detail-btns { display: flex; gap: 8px; margin-top: 0.5rem; }
+
+/* Lista de movimientos */
+.wc-movs-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+
+.wc-mov-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    font-size: 0.84rem;
+}
+.wc-mov-cobro   { background: rgba(34,197,94,0.05); }
+.wc-mov-entrega { background: rgba(245,158,11,0.05); }
+.wc-mov-icon { font-size: 1rem; flex-shrink: 0; }
+.wc-mov-info { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.wc-mov-desc { font-weight: 500; }
+.wc-mov-date { font-size: 0.72rem; color: var(--text-dim); }
+.wc-mov-amount { font-weight: 700; flex-shrink: 0; }
+
+/* Formulario en panel derecho */
+.wc-form-block { max-width: 420px; }
+.wc-form-block h4 { font-size: 1.05rem; margin-bottom: 1.3rem; }
