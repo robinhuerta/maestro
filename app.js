@@ -83,8 +83,11 @@ const projectsData = [
     }
 ];
 
-// === WORD CAPS — Sistema de Reventa (Supabase) ===
+// === WORD CAPS — Sistema de Reventa (Premium) ===
 let wcSelectedClient = null;
+let wcAllData        = [];   // cache global
+let wcChartDonut     = null;
+let wcChartBars      = null;
 
 async function wcLoadData() {
     const { data, error } = await supabaseClient
@@ -93,7 +96,8 @@ async function wcLoadData() {
         .order('fecha', { ascending: false })
         .order('created_at', { ascending: false });
     if (error) { console.error('WC error:', error.message); return null; }
-    return data || [];
+    wcAllData = data || [];
+    return wcAllData;
 }
 
 async function wcSaveMov(mov) {
@@ -124,10 +128,174 @@ function wcBuildClients(data) {
 function wcGetTotals(data) {
     const invertido = data.filter(m => m.tipo === 'compra').reduce((a, m) => a + parseFloat(m.monto), 0);
     const entregado = data.filter(m => m.tipo === 'entrega').reduce((a, m) => a + parseFloat(m.monto), 0);
-    const cobrado   = data.filter(m => m.tipo === 'cobro').reduce((a, m)   => a + parseFloat(m.monto), 0);
+    const cobrado   = data.filter(m => m.tipo === 'cobro').reduce((a, m)  => a + parseFloat(m.monto), 0);
     return { invertido, entregado, cobrado, porCobrar: entregado - cobrado, ganancia: cobrado - invertido };
 }
 
+// --- TAB SWITCHING ---
+function wcSwitchTab(tab, btn) {
+    document.querySelectorAll('.wc-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.wc-tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`wc-tab-${tab}`).classList.add('active');
+    if (tab === 'resumen') wcRenderCharts();
+    if (tab === 'historial') wcRenderHistorial();
+}
+
+// --- CHARTS ---
+function wcRenderCharts() {
+    const data    = wcAllData;
+    const clients = wcBuildClients(data);
+    const entries = Object.entries(clients)
+        .filter(([, cl]) => cl.saldo > 0)
+        .sort((a, b) => b[1].saldo - a[1].saldo)
+        .slice(0, 8);
+
+    const COLORS = [
+        'rgba(239,68,68,0.8)','rgba(245,158,11,0.8)','rgba(99,102,241,0.8)',
+        'rgba(168,85,247,0.8)','rgba(34,197,94,0.8)','rgba(6,182,212,0.8)',
+        'rgba(251,191,36,0.8)','rgba(236,72,153,0.8)'
+    ];
+
+    // Donut — saldo por cliente
+    const donutCtx = document.getElementById('wc-chart-donut');
+    if (donutCtx) {
+        if (wcChartDonut) wcChartDonut.destroy();
+        wcChartDonut = new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: entries.map(([n]) => n),
+                datasets: [{ data: entries.map(([,c]) => c.saldo.toFixed(2)), backgroundColor: COLORS, borderWidth: 2, borderColor: 'rgba(15,23,42,0.8)' }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11, family: 'Outfit' }, boxWidth: 12 } },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: S/ ${parseFloat(ctx.raw).toLocaleString('es-PE',{minimumFractionDigits:2})}` } }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // Bars — entregas vs cobros
+    const barCtx = document.getElementById('wc-chart-bars');
+    const top6   = Object.entries(clients).sort((a,b) => b[1].entregado - a[1].entregado).slice(0,6);
+    if (barCtx) {
+        if (wcChartBars) wcChartBars.destroy();
+        wcChartBars = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: top6.map(([n]) => n.length > 10 ? n.slice(0,10)+'…' : n),
+                datasets: [
+                    { label: 'Entregado', data: top6.map(([,c]) => c.entregado.toFixed(2)), backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 4 },
+                    { label: 'Cobrado',   data: top6.map(([,c]) => c.cobrado.toFixed(2)),   backgroundColor: 'rgba(34,197,94,0.7)',  borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11, family: 'Outfit' } } } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => 'S/'+Number(v).toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+
+    // Ranking
+    const maxSaldo = entries[0]?.[1].saldo || 1;
+    const medals   = ['🥇','🥈','🥉'];
+    const rankEl   = document.getElementById('wc-ranking-list');
+    if (rankEl) {
+        if (entries.length === 0) {
+            rankEl.innerHTML = '<p class="wc-empty">✅ Sin deudas pendientes</p>';
+        } else {
+            rankEl.innerHTML = entries.map(([name, cl], i) => `
+            <div class="wc-rank-item">
+                <span class="wc-rank-pos">${medals[i] || i+1}</span>
+                <span class="wc-rank-name">${name}</span>
+                <div class="wc-rank-bar-wrap"><div class="wc-rank-bar" style="width:${(cl.saldo/maxSaldo*100).toFixed(1)}%"></div></div>
+                <span class="wc-rank-amount">${formatSoles(cl.saldo)}</span>
+            </div>`).join('');
+        }
+    }
+}
+
+// --- HISTORIAL GLOBAL con filtros y reporte ---
+function wcRenderHistorial() {
+    const list = document.getElementById('wc-historial-global');
+    if (!list) return;
+    const search = (document.getElementById('wc-hist-search')?.value || '').toLowerCase();
+    const tipo   = document.getElementById('wc-hist-tipo')?.value  || '';
+    const desde  = document.getElementById('wc-hist-desde')?.value || '';
+    const hasta  = document.getElementById('wc-hist-hasta')?.value || '';
+
+    let filtered = wcAllData.filter(m => {
+        if (tipo   && m.tipo   !== tipo)                   return false;
+        if (desde  && m.fecha  < desde)                    return false;
+        if (hasta  && m.fecha  > hasta)                    return false;
+        if (search && !(
+            (m.cliente     || '').toLowerCase().includes(search) ||
+            (m.descripcion || '').toLowerCase().includes(search) ||
+            (m.proveedor   || '').toLowerCase().includes(search)
+        )) return false;
+        return true;
+    });
+
+    // Resumen del período filtrado
+    const repEnt  = filtered.filter(m => m.tipo === 'entrega').reduce((a,m) => a + parseFloat(m.monto), 0);
+    const repCob  = filtered.filter(m => m.tipo === 'cobro').reduce((a,m)   => a + parseFloat(m.monto), 0);
+    const repComp = filtered.filter(m => m.tipo === 'compra').reduce((a,m)  => a + parseFloat(m.monto), 0);
+    const repBal  = repCob - repEnt;
+
+    document.getElementById('wc-rep-count').textContent  = filtered.length;
+    document.getElementById('wc-rep-ent').textContent    = formatSoles(repEnt);
+    document.getElementById('wc-rep-cob').textContent    = formatSoles(repCob);
+    document.getElementById('wc-rep-comp').textContent   = formatSoles(repComp);
+    const balEl = document.getElementById('wc-rep-bal');
+    balEl.textContent = formatSoles(Math.abs(repBal));
+    balEl.className   = repBal >= 0 ? 'text-success' : 'text-warning';
+
+    if (filtered.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin movimientos con estos filtros.</li>';
+        return;
+    }
+
+    const iconMap  = { entrega: '📦', cobro: '💰', compra: '🛍️' };
+    const classMap = { cobro: 'pos', entrega: 'neg', compra: 'buy' };
+
+    list.innerHTML = filtered.map(m => {
+        const pago = [m.tipo_pago, m.banco].filter(Boolean).join(' · ');
+        const sn   = (m.id||'').toString();
+        return `
+        <li class="wc-hist-item">
+            <span class="wc-hist-icon">${iconMap[m.tipo] || '📄'}</span>
+            <div class="wc-hist-body">
+                <span class="wc-hist-client">${m.cliente || m.proveedor || '—'}</span>
+                <span class="wc-hist-desc">${m.descripcion || m.tipo}</span>
+            </div>
+            <div class="wc-hist-meta">
+                ${pago ? `<span class="wc-hist-pago">${pago}</span>` : ''}
+                <span class="wc-hist-date">${m.fecha}</span>
+                <span class="wc-hist-amount ${classMap[m.tipo]||''}">${m.tipo==='cobro'?'+':'−'}${formatSoles(parseFloat(m.monto))}</span>
+                <button class="btn-delete-tx" onclick="wcDeleteMov('${sn}')" title="Eliminar">✕</button>
+            </div>
+        </li>`;
+    }).join('');
+}
+
+function wcFilterHistorial() { wcRenderHistorial(); }
+
+function wcClearFilters() {
+    document.getElementById('wc-hist-search').value = '';
+    document.getElementById('wc-hist-tipo').value   = '';
+    document.getElementById('wc-hist-desde').value  = '';
+    document.getElementById('wc-hist-hasta').value  = '';
+    wcRenderHistorial();
+}
+
+// --- RENDER PRINCIPAL ---
 async function wcRender() {
     const data = await wcLoadData();
     if (data === null) return;
@@ -141,7 +309,7 @@ async function wcRender() {
     document.getElementById('wc-pen').textContent = formatSoles(totals.porCobrar);
     const ganEl = document.getElementById('wc-gan');
     ganEl.textContent = formatSoles(totals.ganancia);
-    ganEl.className   = totals.ganancia >= 0 ? 'text-success' : 'text-danger';
+    ganEl.className   = `wc-kpi-data strong ${totals.ganancia >= 0 ? 'text-success' : 'text-danger'}`;
 
     const wc = projectsData.find(p => p.id === 'word-caps');
     wc.balance    = totals.porCobrar;
@@ -149,41 +317,55 @@ async function wcRender() {
     calculateGlobalBalance();
     renderProjects();
 
-    const container = document.getElementById('wc-clients-list');
-    const entries   = Object.entries(clients).sort((a, b) => b[1].saldo - a[1].saldo);
+    // Tab activo actualmente
+    const activeTab = document.querySelector('.wc-tab-btn.active');
+    const tabName   = activeTab?.getAttribute('onclick')?.match(/'(\w+)'/)?.[1] || 'resumen';
 
-    if (entries.length === 0) {
-        container.innerHTML = '<p class="wc-empty">Sin clientes aún.<br>Registra una entrega para comenzar.</p>';
-    } else {
-        container.innerHTML = entries.map(([name, cl]) => {
-            const dc  = cl.saldo > 200 ? 'wc-debt-high' : cl.saldo > 0 ? 'wc-debt-med' : 'wc-debt-ok';
-            const ico = cl.saldo > 200 ? '🔴' : cl.saldo > 0 ? '🟡' : '🟢';
-            const sel = wcSelectedClient === name ? 'wc-card-selected' : '';
-            const sn  = name.replace(/'/g, "\\'");
-            return `
-            <div class="wc-client-card ${dc} ${sel}" onclick="wcSelectClient('${sn}')">
-                <div class="wc-card-top">
-                    <span class="wc-client-name">${ico} ${name}</span>
-                    <span class="${cl.saldo > 0 ? 'text-warning' : 'text-success'}" style="font-weight:700;font-size:0.85rem;">
-                        ${cl.saldo > 0 ? 'Debe ' : '✅ '}${formatSoles(Math.abs(cl.saldo))}
-                    </span>
-                </div>
-                <div class="wc-card-detail">
-                    <span>Entregado: ${formatSoles(cl.entregado)}</span>
-                    <span>Cobrado: ${formatSoles(cl.cobrado)}</span>
-                </div>
-                ${cl.saldo > 0 ? `<button class="btn-cobrar-rapido" onclick="event.stopPropagation();wcOpenForm('cobro','${sn}')">💰 Cobrar ahora</button>` : ''}
-            </div>`;
-        }).join('');
+    // Render clientes
+    const container = document.getElementById('wc-clients-list');
+    if (container) {
+        const entries = Object.entries(clients).sort((a, b) => b[1].saldo - a[1].saldo);
+        if (entries.length === 0) {
+            container.innerHTML = '<p class="wc-empty">Sin clientes aún.<br>Registra una entrega para comenzar.</p>';
+        } else {
+            container.innerHTML = entries.map(([name, cl]) => {
+                const dc  = cl.saldo > 200 ? 'wc-debt-high' : cl.saldo > 0 ? 'wc-debt-med' : 'wc-debt-ok';
+                const ico = cl.saldo > 200 ? '🔴' : cl.saldo > 0 ? '🟡' : '🟢';
+                const sel = wcSelectedClient === name ? 'wc-card-selected' : '';
+                const sn  = name.replace(/'/g, "\\'");
+                return `
+                <div class="wc-client-card ${dc} ${sel}" onclick="wcSelectClient('${sn}')">
+                    <div class="wc-card-top">
+                        <span class="wc-client-name">${ico} ${name}</span>
+                        <span class="${cl.saldo > 0 ? 'text-warning' : 'text-success'}" style="font-weight:700;font-size:0.85rem;">
+                            ${cl.saldo > 0 ? 'Debe ' : '✅ '}${formatSoles(Math.abs(cl.saldo))}
+                        </span>
+                    </div>
+                    <div class="wc-card-detail">
+                        <span>📦 ${formatSoles(cl.entregado)}</span>
+                        <span>✅ ${formatSoles(cl.cobrado)}</span>
+                    </div>
+                    ${cl.saldo > 0 ? `<button class="btn-cobrar-rapido" onclick="event.stopPropagation();wcOpenForm('cobro','${sn}')">💰 Cobrar ahora</button>` : ''}
+                </div>`;
+            }).join('');
+        }
     }
 
     if (wcSelectedClient && clients[wcSelectedClient]) {
         wcRenderDetail(wcSelectedClient, clients[wcSelectedClient]);
     }
+
+    if (tabName === 'resumen') wcRenderCharts();
+    if (tabName === 'historial') wcRenderHistorial();
 }
 
 function wcSelectClient(name) {
     wcSelectedClient = name;
+    // Switch to clientes tab if not already there
+    const tabBtn = document.querySelector('.wc-tab-btn:nth-child(2)');
+    if (tabBtn && !document.getElementById('wc-tab-clientes').classList.contains('active')) {
+        wcSwitchTab('clientes', tabBtn);
+    }
     wcRender();
 }
 
@@ -202,7 +384,7 @@ function wcRenderDetail(name, cl) {
             </div>
             <div class="wc-detail-btns">
                 <button class="btn-wc" onclick="wcOpenForm('entrega','${sn}')">📦 Nueva Entrega</button>
-                <button class="btn-wc" onclick="wcOpenForm('cobro','${sn}')">💰 Cobrar</button>
+                <button class="btn-wc btn-wc-cobro" onclick="wcOpenForm('cobro','${sn}')">💰 Cobrar</button>
             </div>
         </div>
         <p class="section-label" style="margin-top:1rem;margin-bottom:0.6rem;">Historial completo</p>
@@ -220,19 +402,21 @@ function wcRenderDetail(name, cl) {
                     ${m.tipo === 'cobro' ? '+' : '-'}${formatSoles(parseFloat(m.monto))}
                 </span>
                 <button class="btn-delete-tx" onclick="wcDeleteMov('${m.id}')" title="Eliminar">✕</button>
-            </li>`;}).join('')}
+            </li>`; }).join('')}
         </ul>`;
 }
 
 function wcOpenForm(tipo, clientePrefill = '') {
+    // Switch to clientes tab
+    const tabBtn = document.querySelector('.wc-tab-btn:nth-child(2)');
+    if (tabBtn) wcSwitchTab('clientes', tabBtn);
+
     const panel  = document.getElementById('wc-right-panel');
     const today  = new Date().toISOString().split('T')[0];
     const safeV  = clientePrefill.replace(/"/g, '&quot;');
     const labels = { entrega: 'Registrar Entrega', cobro: 'Registrar Cobro', compra: 'Registrar Compra' };
     const titulo = tipo === 'entrega' ? '📦 Nueva Entrega' : tipo === 'cobro' ? '💰 Registrar Cobro / Abono' : '🛍️ Compra de Stock';
-
-    const descPlaceholder = tipo === 'entrega'
-        ? 'Ej: 3 gorras snapback, 2 polos talla M'
+    const descPlaceholder = tipo === 'entrega' ? 'Ej: 3 gorras snapback, 2 polos talla M'
         : tipo === 'cobro' ? 'Ej: Abono, pago completo, adelanto'
         : 'Ej: 50 gorras Gamarra, 20 polos Jirón';
 
@@ -303,23 +487,19 @@ function wcOpenForm(tipo, clientePrefill = '') {
     document.getElementById('form-wc-active').onsubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button[type=submit]');
-        btn.disabled = true;
-        btn.textContent = 'Guardando...';
-
+        btn.disabled = true; btn.textContent = 'Guardando...';
         const clienteVal = document.getElementById('wc-f-cliente')?.value?.trim() || null;
         const mov = {
             tipo,
-            monto:      parseFloat(document.getElementById('wc-f-monto').value),
-            descripcion:document.getElementById('wc-f-desc')?.value?.trim() || null,
-            fecha:      document.getElementById('wc-f-fecha').value,
-            cliente:    clienteVal,
-            proveedor:  document.getElementById('wc-f-prov')?.value?.trim() || null,
-            tipo_pago:  document.getElementById('wc-f-tipopago')?.value || null,
-            banco:      document.getElementById('wc-f-banco')?.value || null,
+            monto:       parseFloat(document.getElementById('wc-f-monto').value),
+            descripcion: document.getElementById('wc-f-desc')?.value?.trim() || null,
+            fecha:       document.getElementById('wc-f-fecha').value,
+            cliente:     clienteVal,
+            proveedor:   document.getElementById('wc-f-prov')?.value?.trim() || null,
+            tipo_pago:   document.getElementById('wc-f-tipopago')?.value || null,
+            banco:       document.getElementById('wc-f-banco')?.value || null,
         };
-
         if (clienteVal) wcSelectedClient = clienteVal;
-
         const ok = await wcSaveMov(mov);
         if (ok) {
             btn.textContent = '✅ Guardado';
@@ -331,8 +511,7 @@ function wcOpenForm(tipo, clientePrefill = '') {
             }
             setTimeout(() => { btn.textContent = labels[tipo]; btn.disabled = false; }, 1200);
         } else {
-            btn.disabled = false;
-            btn.textContent = labels[tipo];
+            btn.disabled = false; btn.textContent = labels[tipo];
         }
         await wcRender();
     };
@@ -343,6 +522,9 @@ async function openManualModal() {
     wcSelectedClient = null;
     document.getElementById('wc-right-panel').innerHTML =
         '<p class="wc-hint">← Selecciona un cliente para ver su historial<br>o usa los botones de arriba para registrar</p>';
+    // Reset to resumen tab
+    document.querySelectorAll('.wc-tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+    document.querySelectorAll('.wc-tab-content').forEach((t,i) => t.classList.toggle('active', i===0));
     await wcRender();
 }
 
@@ -359,6 +541,7 @@ async function loadWordCapsBalance() {
 }
 
 // === DASHBOARD CORE ===
+
 function renderDate() {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', options);

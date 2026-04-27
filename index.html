@@ -184,38 +184,131 @@
         =========================================== -->
         <div id="modal-manual" class="modal">
             <div class="modal-content wc-modal glass">
+
+                <!-- HEADER -->
                 <header class="wc-header">
-                    <h2>🌍 Word Caps</h2>
-                    <div class="wc-header-actions">
-                        <button class="btn-wc" onclick="wcOpenForm('entrega')">📦 Nueva Entrega</button>
-                        <button class="btn-wc" onclick="wcOpenForm('cobro')">💰 Nuevo Cobro</button>
-                        <button class="btn-wc btn-wc-alt" onclick="wcOpenForm('compra')">🛍️ Compra Stock</button>
+                    <div class="wc-header-brand">
+                        <span class="wc-brand-icon">🌍</span>
+                        <div>
+                            <h2>Word Caps</h2>
+                            <span class="wc-brand-sub">Sistema de Reventa</span>
+                        </div>
                     </div>
-                    <span class="close-btn" onclick="this.closest('.modal').classList.remove('active')">&times;</span>
+                    <div class="wc-header-actions">
+                        <button class="btn-wc" onclick="wcOpenForm('entrega')">📦 Entrega</button>
+                        <button class="btn-wc btn-wc-cobro" onclick="wcOpenForm('cobro')">💰 Cobrar</button>
+                        <button class="btn-wc btn-wc-alt" onclick="wcOpenForm('compra')">🛍️ Stock</button>
+                    </div>
+                    <span class="close-btn wc-close" onclick="this.closest('.modal').classList.remove('active')">&times;</span>
                 </header>
 
-                <!-- KPIs siempre visibles -->
+                <!-- KPI CARDS PREMIUM -->
                 <div class="wc-kpi-bar">
-                    <div class="wc-kpi"><small>💸 Invertido</small><strong id="wc-inv">S/ 0.00</strong></div>
-                    <div class="wc-kpi"><small>📦 Entregado</small><strong id="wc-ent">S/ 0.00</strong></div>
-                    <div class="wc-kpi"><small>✅ Cobrado</small><strong id="wc-cob" class="text-success">S/ 0.00</strong></div>
-                    <div class="wc-kpi"><small>⏳ Por Cobrar</small><strong id="wc-pen" class="text-warning">S/ 0.00</strong></div>
-                    <div class="wc-kpi"><small>📈 Ganancia</small><strong id="wc-gan">S/ 0.00</strong></div>
+                    <div class="wc-kpi wc-kpi-inv">
+                        <div class="wc-kpi-icon">💸</div>
+                        <div class="wc-kpi-data">
+                            <small>Invertido</small>
+                            <strong id="wc-inv">S/ 0.00</strong>
+                        </div>
+                    </div>
+                    <div class="wc-kpi wc-kpi-ent">
+                        <div class="wc-kpi-icon">📦</div>
+                        <div class="wc-kpi-data">
+                            <small>Entregado</small>
+                            <strong id="wc-ent">S/ 0.00</strong>
+                        </div>
+                    </div>
+                    <div class="wc-kpi wc-kpi-cob">
+                        <div class="wc-kpi-icon">✅</div>
+                        <div class="wc-kpi-data">
+                            <small>Cobrado</small>
+                            <strong id="wc-cob" class="text-success">S/ 0.00</strong>
+                        </div>
+                    </div>
+                    <div class="wc-kpi wc-kpi-pen">
+                        <div class="wc-kpi-icon">⏳</div>
+                        <div class="wc-kpi-data">
+                            <small>Por Cobrar</small>
+                            <strong id="wc-pen" class="text-warning">S/ 0.00</strong>
+                        </div>
+                    </div>
+                    <div class="wc-kpi wc-kpi-gan">
+                        <div class="wc-kpi-icon">📈</div>
+                        <div class="wc-kpi-data">
+                            <small>Ganancia</small>
+                            <strong id="wc-gan">S/ 0.00</strong>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Cuerpo: dos columnas -->
-                <div class="wc-body">
-                    <!-- Izquierda: lista de clientes -->
-                    <div class="wc-left">
-                        <p class="section-label" style="margin-bottom:0.8rem;">Estado por Cliente</p>
-                        <div id="wc-clients-list"></div>
-                    </div>
+                <!-- TABS NAV -->
+                <div class="wc-tabs-nav">
+                    <button class="wc-tab-btn active" onclick="wcSwitchTab('resumen', this)">📊 Resumen</button>
+                    <button class="wc-tab-btn" onclick="wcSwitchTab('clientes', this)">👥 Clientes</button>
+                    <button class="wc-tab-btn" onclick="wcSwitchTab('historial', this)">📋 Historial Global</button>
+                </div>
 
-                    <!-- Derecha: formulario o detalle del cliente -->
-                    <div class="wc-right" id="wc-right-panel">
-                        <p class="wc-hint">← Selecciona un cliente para ver su historial<br>o usa los botones de arriba para registrar</p>
+                <!-- TAB: RESUMEN (gráficos) -->
+                <div id="wc-tab-resumen" class="wc-tab-content active">
+                    <div class="wc-charts-grid">
+                        <div class="wc-chart-card glass">
+                            <h4 class="wc-chart-title">🎯 Cartera por Cliente</h4>
+                            <p class="wc-chart-sub">Deuda pendiente individual</p>
+                            <div class="wc-chart-wrap">
+                                <canvas id="wc-chart-donut"></canvas>
+                            </div>
+                        </div>
+                        <div class="wc-chart-card glass">
+                            <h4 class="wc-chart-title">📊 Entregas vs Cobros</h4>
+                            <p class="wc-chart-sub">Comparativa por cliente</p>
+                            <div class="wc-chart-wrap">
+                                <canvas id="wc-chart-bars"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wc-ranking-section">
+                        <h4 class="wc-section-title">🏆 Ranking de Deudas</h4>
+                        <div id="wc-ranking-list"></div>
                     </div>
                 </div>
+
+                <!-- TAB: CLIENTES -->
+                <div id="wc-tab-clientes" class="wc-tab-content">
+                    <div class="wc-body">
+                        <div class="wc-left">
+                            <p class="section-label" style="margin-bottom:0.8rem;">Estado por Cliente</p>
+                            <div id="wc-clients-list"></div>
+                        </div>
+                        <div class="wc-right" id="wc-right-panel">
+                            <p class="wc-hint">← Selecciona un cliente para ver su historial<br>o usa los botones de arriba para registrar</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: HISTORIAL GLOBAL -->
+                <div id="wc-tab-historial" class="wc-tab-content">
+                    <div class="wc-historial-filters">
+                        <input type="text" id="wc-hist-search" placeholder="🔍 Buscar cliente o descripción..." oninput="wcFilterHistorial()">
+                        <select id="wc-hist-tipo" onchange="wcFilterHistorial()">
+                            <option value="">Todos los tipos</option>
+                            <option value="entrega">📦 Entregas</option>
+                            <option value="cobro">💰 Cobros</option>
+                            <option value="compra">🛍️ Compras</option>
+                        </select>
+                        <input type="date" id="wc-hist-desde" onchange="wcFilterHistorial()" title="Desde">
+                        <input type="date" id="wc-hist-hasta" onchange="wcFilterHistorial()" title="Hasta">
+                        <button class="btn-wc" onclick="wcClearFilters()">✕ Limpiar</button>
+                    </div>
+                    <div class="wc-report-summary">
+                        <div class="wc-rep-stat"><small>Registros</small><strong id="wc-rep-count">0</strong></div>
+                        <div class="wc-rep-stat"><small>Total Entregas</small><strong id="wc-rep-ent" class="text-warning">S/ 0.00</strong></div>
+                        <div class="wc-rep-stat"><small>Total Cobros</small><strong id="wc-rep-cob" class="text-success">S/ 0.00</strong></div>
+                        <div class="wc-rep-stat"><small>Total Compras</small><strong id="wc-rep-comp">S/ 0.00</strong></div>
+                        <div class="wc-rep-stat"><small>Balance Período</small><strong id="wc-rep-bal">S/ 0.00</strong></div>
+                    </div>
+                    <ul id="wc-historial-global" class="wc-historial-list"></ul>
+                </div>
+
             </div>
         </div>
 
@@ -527,6 +620,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
