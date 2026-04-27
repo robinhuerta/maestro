@@ -426,6 +426,11 @@ input:focus, select:focus {
     border-color: var(--primary);
 }
 
+select option {
+    background: #1e293b;
+    color: #f8fafc;
+}
+
 .recent-transactions {
     margin-top: 2rem;
     border-top: 1px solid var(--glass-border);

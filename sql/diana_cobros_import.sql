@@ -1,6 +1,9 @@
 -- =============================================================
 -- MAESTRO — Word Caps: Importar cobros DIANA (A cuentas)
--- 308 filas | Total S/. 848,451.27
+-- 308 filas | Total bruto S/. 892,333.29
+-- ⚠️ NOTA: 12 filas IZIPAY son solo NOTAS (monto en descripción),
+--    no cobros reales. Se eliminaron con fix_cobros_diana.sql
+--    Total real cobrado: S/. 848,451.27
 -- Ejecutar en: Supabase Dashboard > SQL Editor
 -- =============================================================
 
