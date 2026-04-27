@@ -207,18 +207,20 @@ function wcRenderDetail(name, cl) {
         </div>
         <p class="section-label" style="margin-top:1rem;margin-bottom:0.6rem;">Historial completo</p>
         <ul class="wc-movs-list">
-            ${cl.movs.map(m => `
+            ${cl.movs.map(m => {
+                const pago = [m.tipo_pago, m.banco].filter(Boolean).join(' · ');
+                return `
             <li class="wc-mov-item ${m.tipo === 'cobro' ? 'wc-mov-cobro' : 'wc-mov-entrega'}">
                 <span class="wc-mov-icon">${m.tipo === 'cobro' ? '💰' : '📦'}</span>
                 <div class="wc-mov-info">
                     <span class="wc-mov-desc">${m.descripcion || (m.tipo === 'cobro' ? 'Cobro' : 'Entrega')}</span>
-                    <span class="wc-mov-date">${m.fecha}</span>
+                    <span class="wc-mov-date">${m.fecha}${pago ? ' · ' + pago : ''}</span>
                 </div>
                 <span class="wc-mov-amount ${m.tipo === 'cobro' ? 'text-success' : 'text-warning'}">
                     ${m.tipo === 'cobro' ? '+' : '-'}${formatSoles(parseFloat(m.monto))}
                 </span>
                 <button class="btn-delete-tx" onclick="wcDeleteMov('${m.id}')" title="Eliminar">✕</button>
-            </li>`).join('')}
+            </li>`;}).join('')}
         </ul>`;
 }
 
@@ -227,26 +229,24 @@ function wcOpenForm(tipo, clientePrefill = '') {
     const today  = new Date().toISOString().split('T')[0];
     const safeV  = clientePrefill.replace(/"/g, '&quot;');
     const labels = { entrega: 'Registrar Entrega', cobro: 'Registrar Cobro', compra: 'Registrar Compra' };
-
-    let clienteField = tipo !== 'compra'
-        ? `<div class="form-group">
-               <label>Cliente</label>
-               <input type="text" id="wc-f-cliente" value="${safeV}" placeholder="Nombre del cliente" required>
-           </div>` : '';
-
-    let provField = tipo === 'compra'
-        ? `<div class="form-group">
-               <label>Proveedor</label>
-               <input type="text" id="wc-f-prov" placeholder="Ej: Gamarra, Distribuidora López">
-           </div>` : '';
+    const titulo = tipo === 'entrega' ? '📦 Nueva Entrega' : tipo === 'cobro' ? '💰 Registrar Cobro / Abono' : '🛍️ Compra de Stock';
 
     const descPlaceholder = tipo === 'entrega'
         ? 'Ej: 3 gorras snapback, 2 polos talla M'
-        : tipo === 'cobro'
-        ? 'Ej: Pago parcial, abono, pago completo'
+        : tipo === 'cobro' ? 'Ej: Abono, pago completo, adelanto'
         : 'Ej: 50 gorras Gamarra, 20 polos Jirón';
 
-    const titulo = tipo === 'entrega' ? '📦 Nueva Entrega' : tipo === 'cobro' ? '💰 Registrar Cobro' : '🛍️ Compra de Stock';
+    const clienteField = tipo !== 'compra' ? `
+        <div class="form-group">
+            <label>Cliente</label>
+            <input type="text" id="wc-f-cliente" value="${safeV}" placeholder="Nombre del cliente" required>
+        </div>` : '';
+
+    const provField = tipo === 'compra' ? `
+        <div class="form-group">
+            <label>Proveedor</label>
+            <input type="text" id="wc-f-prov" placeholder="Ej: Gamarra, Distribuidora López">
+        </div>` : '';
 
     panel.innerHTML = `
         <div class="wc-form-block">
@@ -255,9 +255,37 @@ function wcOpenForm(tipo, clientePrefill = '') {
                 ${clienteField}
                 <div class="form-group">
                     <label>Descripción</label>
-                    <input type="text" id="wc-f-desc" placeholder="${descPlaceholder}" ${tipo !== 'cobro' ? 'required' : ''}>
+                    <input type="text" id="wc-f-desc" placeholder="${descPlaceholder}">
                 </div>
                 ${provField}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Pago</label>
+                        <select id="wc-f-tipopago">
+                            <option value="">— Seleccionar —</option>
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                            <option value="YAPE">Yape</option>
+                            <option value="PLIN">Plin</option>
+                            <option value="IZIPAY">Izipay</option>
+                            <option value="WESTER">Western Union</option>
+                            <option value="TELAS">Telas (especie)</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Banco</label>
+                        <select id="wc-f-banco">
+                            <option value="">— Ninguno —</option>
+                            <option value="BCP">BCP</option>
+                            <option value="INTERBANK">Interbank</option>
+                            <option value="BBVA">BBVA</option>
+                            <option value="SCOTIABANK">Scotiabank</option>
+                            <option value="GHC">GHC</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Monto (S/)</label>
@@ -281,11 +309,13 @@ function wcOpenForm(tipo, clientePrefill = '') {
         const clienteVal = document.getElementById('wc-f-cliente')?.value?.trim() || null;
         const mov = {
             tipo,
-            monto:       parseFloat(document.getElementById('wc-f-monto').value),
-            descripcion: document.getElementById('wc-f-desc')?.value?.trim() || null,
-            fecha:       document.getElementById('wc-f-fecha').value,
-            cliente:     clienteVal,
-            proveedor:   document.getElementById('wc-f-prov')?.value?.trim() || null,
+            monto:      parseFloat(document.getElementById('wc-f-monto').value),
+            descripcion:document.getElementById('wc-f-desc')?.value?.trim() || null,
+            fecha:      document.getElementById('wc-f-fecha').value,
+            cliente:    clienteVal,
+            proveedor:  document.getElementById('wc-f-prov')?.value?.trim() || null,
+            tipo_pago:  document.getElementById('wc-f-tipopago')?.value || null,
+            banco:      document.getElementById('wc-f-banco')?.value || null,
         };
 
         if (clienteVal) wcSelectedClient = clienteVal;
