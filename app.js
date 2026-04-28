@@ -1449,7 +1449,7 @@ async function plRender() {
         const val = monto * factor;
         
         totalDeuda += val;
-        if (m.taller === 'CORTE' || m.taller === 'TIENDA' || m.taller === 'OTROS') ghcDeuda += val;
+        if (m.taller === 'CORTE' || m.taller === 'TIENDA' || m.taller === 'OTROS' || m.taller === 'CONTADOR' || m.taller === 'ADMINISTRACION') ghcDeuda += val;
         else if (m.taller === 'CONFECCION') confDeuda += val;
         else if (m.taller === 'BORDADO') borDeuda += val;
     });
@@ -1473,7 +1473,7 @@ async function plRender() {
     if (data.length === 0) {
         list.innerHTML = '<li class="tx-empty">Sin historial de planillas aún.</li>';
     } else {
-        const iconos = { CORTE: '✂️', CONFECCION: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄' };
+        const iconos = { CORTE: '✂️', CONFECCION: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼' };
         list.innerHTML = data.slice(0, 15).map(m => `
             <li class="wc-hist-item">
                 <span class="wc-hist-icon">${iconos[m.taller] || '📄'}</span>
