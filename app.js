@@ -1503,7 +1503,7 @@ async function plRender() {
     const data = await plLoadData();
     if (!data) return;
 
-    let ghcDeuda = 0, confDeuda = 0, borDeuda = 0, totalDeuda = 0;
+    let ghcDeuda = 0, confDeuda = 0, borDeuda = 0, totalDeuda = 0, totalPagado = 0;
 
     data.forEach(m => {
         const monto = parseFloat(m.monto_total);
@@ -1511,6 +1511,11 @@ async function plRender() {
         const val = monto * factor;
         
         totalDeuda += val;
+        
+        if (m.tipo_registro === 'pago_realizado') {
+            totalPagado += monto;
+        }
+
         if (m.taller === 'CORTE' || m.taller === 'TIENDA' || m.taller === 'OTROS' || m.taller === 'CONTADOR' || m.taller === 'ADMINISTRACION' || m.taller === 'CONTROL_CALIDAD') ghcDeuda += val;
         else if (m.taller === 'CONFECCION' || m.taller === 'CONFECCION_4') confDeuda += val;
         else if (m.taller === 'BORDADO') borDeuda += val;
@@ -1526,7 +1531,7 @@ async function plRender() {
     // Update global project
     const proj = projectsData.find(p => p.id === 'planillas');
     if (proj) {
-        proj.balance = -totalDeuda; // Resta del balance global
+        proj.balance = -totalPagado; // El balance global resta el dinero que ya salio (pagos realizados)
         proj.lastUpdate = `${data.length} registros`;
     }
     calculateGlobalBalance();
