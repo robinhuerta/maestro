@@ -723,9 +723,15 @@
                                     <input type="number" id="pl-trab-monto" step="0.01" placeholder="0.00" required>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label id="pl-trab-desc-label">Descripción / Notas</label>
-                                <input type="text" id="pl-trab-desc" placeholder="Detalles opcionales">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label id="pl-trab-desc-label">Descripción / Notas</label>
+                                    <input type="text" id="pl-trab-desc" placeholder="Detalles opcionales">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fecha Venc. (Opcional)</label>
+                                    <input type="date" id="pl-trab-venc">
+                                </div>
                             </div>
                             <button type="submit" class="btn-primary" style="background: var(--danger);">+ Agregar Deuda</button>
                         </form>

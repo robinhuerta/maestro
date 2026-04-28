@@ -1489,6 +1489,35 @@ function plCheckAlerts() {
     // Tienda: Sabado o Domingo
     if (dow === 6 || dow === 0) alertas.push("Tienda (Semanal)");
 
+    // Vencimientos dinamicos
+    if (typeof plAllData !== 'undefined' && plAllData.length > 0) {
+        const deudasPersonales = {};
+        plAllData.forEach(m => {
+            if (!deudasPersonales[m.personal]) deudasPersonales[m.personal] = { balance: 0, vencimientos: [] };
+            const factor = m.tipo_registro === 'trabajo_realizado' ? 1 : -1;
+            deudasPersonales[m.personal].balance += parseFloat(m.monto_total) * factor;
+            
+            if (m.tipo_registro === 'trabajo_realizado' && m.descripcion && m.descripcion.includes('[Vence:')) {
+                const match = m.descripcion.match(/\[Vence: (.*?)\]/);
+                if (match) deudasPersonales[m.personal].vencimientos.push(match[1]);
+            }
+        });
+
+        Object.keys(deudasPersonales).forEach(persona => {
+            if (deudasPersonales[persona].balance > 1) { // Deuda pendiente > 1 sol
+                deudasPersonales[persona].vencimientos.forEach(vDate => {
+                    const vTime = new Date(vDate + 'T00:00:00').getTime();
+                    const nowTime = today.getTime();
+                    const diffDays = (vTime - nowTime) / (1000 * 60 * 60 * 24);
+                    // Avisar 3 dias antes, el mismo dia, o si ya se pasó (hasta 5 dias despues)
+                    if (diffDays <= 3 && diffDays >= -5) {
+                        alertas.push(`${persona} (Vence el ${vDate})`);
+                    }
+                });
+            }
+        });
+    }
+
     const alertsBox = document.getElementById('planillas-alerts');
     if (alertas.length > 0) {
         const unicas = [...new Set(alertas)];
@@ -1587,6 +1616,12 @@ function initPlanillasForms() {
         const btn = e.target.querySelector('button');
         btn.disabled = true; btn.textContent = 'Guardando...';
 
+        let desc = document.getElementById('pl-trab-desc').value.trim();
+        const venc = document.getElementById('pl-trab-venc').value;
+        if (venc) {
+            desc = desc ? `${desc} [Vence: ${venc}]` : `[Vence: ${venc}]`;
+        }
+
         const mov = {
             fecha: today,
             taller: document.getElementById('pl-trab-taller').value,
@@ -1594,7 +1629,7 @@ function initPlanillasForms() {
             tipo_registro: 'trabajo_realizado',
             cantidad: parseInt(document.getElementById('pl-trab-cantidad').value || 0),
             monto_total: parseFloat(document.getElementById('pl-trab-monto').value),
-            descripcion: document.getElementById('pl-trab-desc').value.trim() || null
+            descripcion: desc || null
         };
 
         const ok = await plSaveMov(mov);
