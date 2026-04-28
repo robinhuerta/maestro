@@ -8,6 +8,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Login Overlay -->
+    <div id="login-overlay">
+        <div class="login-box glass">
+            <div class="logo-m" style="margin: 0 auto 1rem;">M</div>
+            <h2 style="margin-bottom: 1rem; text-align: center;">Acceso MAESTRO</h2>
+            <input type="password" id="login-pin" placeholder="Ingresa el PIN" style="width: 100%; margin-bottom: 1rem; text-align: center; letter-spacing: 2px;">
+            <button class="btn-primary" onclick="checkPin()" style="width: 100%;">Entrar</button>
+            <p id="login-error" style="color: var(--danger); text-align: center; margin-top: 1rem; display: none; font-size: 0.9rem;">PIN incorrecto</p>
+        </div>
+    </div>
+    <script>
+        // Simple Auth Check
+        if (sessionStorage.getItem('maestro_auth') === 'true') {
+            document.addEventListener("DOMContentLoaded", () => {
+                document.getElementById('login-overlay').style.display = 'none';
+            });
+        }
+
+        function checkPin() {
+            const pin = document.getElementById('login-pin').value;
+            if (pin === 'maestro2026') {
+                sessionStorage.setItem('maestro_auth', 'true');
+                document.getElementById('login-overlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('login-overlay').style.display = 'none';
+                }, 300);
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+                document.getElementById('login-pin').value = '';
+                setTimeout(() => {
+                    document.getElementById('login-error').style.display = 'none';
+                }, 2000);
+            }
+        }
+        
+        // Allow Enter key to submit
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('login-pin').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') checkPin();
+            });
+        });
+    </script>
     <div class="dashboard-container">
         <div class="bg-gradient"></div>
 
