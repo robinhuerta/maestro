@@ -80,6 +80,16 @@ const projectsData = [
         balance: 0,
         isManual: true,
         path: '#'
+    },
+    {
+        id: 'planillas',
+        name: 'Talleres y Planillas',
+        icon: '🏭',
+        status: 'online',
+        lastUpdate: 'Cargando...',
+        balance: 0,
+        path: '#',
+        modalId: 'modal-planillas'
     }
 ];
 
@@ -1379,6 +1389,160 @@ function applyAdminName(name) {
     document.getElementById('avatar-initials').textContent = initials;
 }
 
+// === MÓDULO: TALLERES Y PLANILLAS ===
+let plAllData = [];
+
+async function plLoadData() {
+    const { data, error } = await supabaseClient
+        .from('maestro_planillas')
+        .select('*')
+        .order('fecha', { ascending: false })
+        .order('created_at', { ascending: false });
+    if (error) { console.error('Planillas error:', error.message); return null; }
+    plAllData = data || [];
+    return plAllData;
+}
+
+async function plSaveMov(mov) {
+    const { error } = await supabaseClient.from('maestro_planillas').insert([mov]);
+    if (error) { alert('Error al guardar: ' + error.message); return false; }
+    return true;
+}
+
+function plUpdateFormUI() {
+    const taller = document.getElementById('pl-trab-taller').value;
+    const cantGroup = document.getElementById('pl-trab-cant-group');
+    const montoEl = document.getElementById('pl-trab-monto');
+    
+    if (taller === 'CORTE' || taller === 'CONFECCION') {
+        cantGroup.style.display = 'block';
+        montoEl.readOnly = true;
+        document.getElementById('pl-trab-cantidad').required = true;
+    } else {
+        cantGroup.style.display = 'none';
+        montoEl.readOnly = false;
+        document.getElementById('pl-trab-cantidad').required = false;
+        document.getElementById('pl-trab-cantidad').value = '';
+        if (taller === 'TIENDA') montoEl.value = '420.00';
+        else montoEl.value = '';
+    }
+}
+
+function plCalcMonto() {
+    const taller = document.getElementById('pl-trab-taller').value;
+    const cant = parseInt(document.getElementById('pl-trab-cantidad').value || 0);
+    const montoEl = document.getElementById('pl-trab-monto');
+    
+    if (taller === 'CORTE') montoEl.value = (cant * 0.5).toFixed(2);
+    else if (taller === 'CONFECCION') montoEl.value = (cant * 5.0).toFixed(2);
+}
+
+async function plRender() {
+    const data = await plLoadData();
+    if (!data) return;
+
+    let ghcDeuda = 0, confDeuda = 0, borDeuda = 0, totalDeuda = 0;
+
+    data.forEach(m => {
+        const monto = parseFloat(m.monto_total);
+        const factor = m.tipo_registro === 'trabajo_realizado' ? 1 : -1;
+        const val = monto * factor;
+        
+        totalDeuda += val;
+        if (m.taller === 'CORTE' || m.taller === 'TIENDA' || m.taller === 'OTROS') ghcDeuda += val;
+        else if (m.taller === 'CONFECCION') confDeuda += val;
+        else if (m.taller === 'BORDADO') borDeuda += val;
+    });
+
+    document.getElementById('planillas-total-deuda').textContent = formatSoles(totalDeuda);
+    document.getElementById('planillas-ghc').textContent = formatSoles(ghcDeuda);
+    document.getElementById('planillas-confeccion').textContent = formatSoles(confDeuda);
+    document.getElementById('planillas-bordados').textContent = formatSoles(borDeuda);
+
+    // Update global project
+    const proj = projectsData.find(p => p.id === 'planillas');
+    if (proj) {
+        proj.balance = -totalDeuda; // Resta del balance global
+        proj.lastUpdate = `${data.length} registros`;
+    }
+    calculateGlobalBalance();
+    renderProjects();
+
+    // Render list
+    const list = document.getElementById('planillas-list');
+    if (data.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin historial de planillas aún.</li>';
+    } else {
+        const iconos = { CORTE: '✂️', CONFECCION: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄' };
+        list.innerHTML = data.slice(0, 15).map(m => `
+            <li class="wc-hist-item">
+                <span class="wc-hist-icon">${iconos[m.taller] || '📄'}</span>
+                <div class="wc-hist-body">
+                    <span class="wc-hist-client">${m.personal} <small style="color:var(--text-dim);">(${m.taller})</small></span>
+                    <span class="wc-hist-desc">${m.descripcion || (m.tipo_registro==='trabajo_realizado'?'Trabajo (Deuda)':'Pago Adelanto')} ${m.cantidad ? `[${m.cantidad} uds]` : ''}</span>
+                </div>
+                <div class="wc-hist-meta">
+                    <span class="wc-hist-date">${m.fecha}</span>
+                    <span class="wc-hist-amount ${m.tipo_registro === 'trabajo_realizado' ? 'neg' : 'pos'}">
+                        ${m.tipo_registro === 'trabajo_realizado' ? '−' : '+'}${formatSoles(parseFloat(m.monto_total))}
+                    </span>
+                </div>
+            </li>
+        `).join('');
+    }
+}
+
+function initPlanillasForms() {
+    const formTrab = document.getElementById('form-planillas-trabajo');
+    const formPago = document.getElementById('form-planillas-pago');
+    const today = new Date().toISOString().split('T')[0];
+
+    if (formTrab) formTrab.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.disabled = true; btn.textContent = 'Guardando...';
+
+        const mov = {
+            fecha: today,
+            taller: document.getElementById('pl-trab-taller').value,
+            personal: document.getElementById('pl-trab-personal').value.trim(),
+            tipo_registro: 'trabajo_realizado',
+            cantidad: parseInt(document.getElementById('pl-trab-cantidad').value || 0),
+            monto_total: parseFloat(document.getElementById('pl-trab-monto').value),
+            descripcion: document.getElementById('pl-trab-desc').value.trim() || null
+        };
+
+        const ok = await plSaveMov(mov);
+        if (ok) {
+            e.target.reset();
+            plUpdateFormUI();
+        }
+        await plRender();
+        btn.disabled = false; btn.textContent = '+ Agregar Deuda';
+    };
+
+    if (formPago) formPago.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.disabled = true; btn.textContent = 'Guardando...';
+
+        const mov = {
+            fecha: today,
+            taller: document.getElementById('pl-pago-taller').value,
+            personal: document.getElementById('pl-pago-personal').value.trim(),
+            tipo_registro: 'pago_realizado',
+            cantidad: 0,
+            monto_total: parseFloat(document.getElementById('pl-pago-monto').value),
+            descripcion: 'Abono/Pago'
+        };
+
+        const ok = await plSaveMov(mov);
+        if (ok) e.target.reset();
+        await plRender();
+        btn.disabled = false; btn.textContent = '✓ Registrar Pago';
+    };
+}
+
 // === INIT ===
 function initDashboard() {
     renderDate();
@@ -1391,9 +1555,11 @@ function initDashboard() {
     initGorrasForm();
     initCrmForm();
     initRadioForm();
+    initPlanillasForms();
     loadRadioBalance();
     loadCrmBalance();
     loadWordCapsBalance();
+    plRender();
     const savedName = localStorage.getItem('maestro_admin_name');
     if (savedName) applyAdminName(savedName);
 }

@@ -655,6 +655,116 @@
             </div>
         </div>
 
+        <!-- ==========================================
+             MODAL: TALLERES Y PLANILLAS
+        =========================================== -->
+        <div id="modal-planillas" class="modal">
+            <div class="modal-content modal-wide glass">
+                <header>
+                    <h2>🏭 Control de Talleres y Planillas</h2>
+                    <span class="close-btn" onclick="this.closest('.modal').classList.remove('active')">&times;</span>
+                </header>
+
+                <div class="module-summary">
+                    <div class="summary-item">
+                        <small>Total Deuda Pendiente</small>
+                        <strong id="planillas-total-deuda" class="text-danger">S/ 0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>Planillas GHC (Corte + Otros)</small>
+                        <strong id="planillas-ghc" class="text-warning">S/ 0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>Confección</small>
+                        <strong id="planillas-confeccion" class="text-warning">S/ 0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <small>Bordados</small>
+                        <strong id="planillas-bordados" class="text-warning">S/ 0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Formularios -->
+                <div class="module-section" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <!-- Registrar Trabajo -->
+                    <div class="glass" style="flex: 1; min-width: 280px; padding: 1.5rem; border-radius: 12px; background: rgba(239, 68, 68, 0.05);">
+                        <h3 class="section-label" style="color: var(--danger);">Registrar Trabajo (Suma Deuda)</h3>
+                        <form id="form-planillas-trabajo">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Taller / Área *</label>
+                                    <select id="pl-trab-taller" required onchange="plUpdateFormUI()">
+                                        <option value="">— Seleccionar —</option>
+                                        <option value="CORTE">Corte (S/ 0.5 x gorra)</option>
+                                        <option value="CONFECCION">Confección (S/ 5.0 x gorra)</option>
+                                        <option value="BORDADO">Bordado (Cotización libre)</option>
+                                        <option value="TIENDA">Tienda (S/ 420 base)</option>
+                                        <option value="OTROS">Alquileres / Servicios</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Personal / Local *</label>
+                                    <input type="text" id="pl-trab-personal" placeholder="Ej: Daniel, Victor, Gamarra" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group" id="pl-trab-cant-group" style="display:none;">
+                                    <label>Cantidad (Gorras)</label>
+                                    <input type="number" id="pl-trab-cantidad" placeholder="0" oninput="plCalcMonto()">
+                                </div>
+                                <div class="form-group" id="pl-trab-monto-group">
+                                    <label>Monto Total (S/) *</label>
+                                    <input type="number" id="pl-trab-monto" step="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Descripción / Notas</label>
+                                <input type="text" id="pl-trab-desc" placeholder="Detalles opcionales">
+                            </div>
+                            <button type="submit" class="btn-primary" style="background: var(--danger);">+ Agregar Deuda</button>
+                        </form>
+                    </div>
+
+                    <!-- Registrar Pago -->
+                    <div class="glass" style="flex: 1; min-width: 280px; padding: 1.5rem; border-radius: 12px; background: rgba(34, 197, 94, 0.05);">
+                        <h3 class="section-label" style="color: var(--success);">Registrar Pago (Resta Deuda)</h3>
+                        <form id="form-planillas-pago">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Taller / Área *</label>
+                                    <select id="pl-pago-taller" required>
+                                        <option value="">— Seleccionar —</option>
+                                        <option value="CORTE">Corte</option>
+                                        <option value="CONFECCION">Confección</option>
+                                        <option value="BORDADO">Bordado</option>
+                                        <option value="TIENDA">Tienda</option>
+                                        <option value="OTROS">Alquileres / Servicios</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Personal / Local *</label>
+                                    <input type="text" id="pl-pago-personal" placeholder="A quién se pagó" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Monto Pagado (S/) *</label>
+                                <input type="number" id="pl-pago-monto" step="0.01" placeholder="0.00" required>
+                            </div>
+                            <button type="submit" class="btn-primary" style="background: var(--success);">✓ Registrar Pago</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Historial -->
+                <div class="module-section">
+                    <h3 class="section-label">Historial Reciente</h3>
+                    <ul id="planillas-list" class="wc-historial-list">
+                        <li class="tx-empty">Cargando...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Supabase CDN -->
