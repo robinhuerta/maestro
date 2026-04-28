@@ -720,7 +720,7 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Descripción / Notas</label>
+                                <label id="pl-trab-desc-label">Descripción / Notas</label>
                                 <input type="text" id="pl-trab-desc" placeholder="Detalles opcionales">
                             </div>
                             <button type="submit" class="btn-primary" style="background: var(--danger);">+ Agregar Deuda</button>
@@ -734,7 +734,7 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Taller / Área *</label>
-                                    <select id="pl-pago-taller" required>
+                                    <select id="pl-pago-taller" required onchange="plUpdatePagoUI()">
                                         <option value="">— Seleccionar —</option>
                                         <option value="CORTE">Corte</option>
                                         <option value="CONFECCION">Confección</option>
@@ -750,9 +750,15 @@
                                     <input type="text" id="pl-pago-personal" placeholder="A quién se pagó" required>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Monto Pagado (S/) *</label>
-                                <input type="number" id="pl-pago-monto" step="0.01" placeholder="0.00" required>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Monto Pagado (S/) *</label>
+                                    <input type="number" id="pl-pago-monto" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label id="pl-pago-desc-label">Descripción / Notas</label>
+                                    <input type="text" id="pl-pago-desc" placeholder="Detalles opcionales">
+                                </div>
                             </div>
                             <button type="submit" class="btn-primary" style="background: var(--success);">✓ Registrar Pago</button>
                         </form>

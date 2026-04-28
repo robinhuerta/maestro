@@ -1413,6 +1413,8 @@ function plUpdateFormUI() {
     const taller = document.getElementById('pl-trab-taller').value;
     const cantGroup = document.getElementById('pl-trab-cant-group');
     const montoEl = document.getElementById('pl-trab-monto');
+    const descLabel = document.getElementById('pl-trab-desc-label');
+    const descInput = document.getElementById('pl-trab-desc');
     
     if (taller === 'CORTE' || taller === 'CONFECCION') {
         cantGroup.style.display = 'block';
@@ -1425,6 +1427,34 @@ function plUpdateFormUI() {
         document.getElementById('pl-trab-cantidad').value = '';
         if (taller === 'TIENDA') montoEl.value = '420.00';
         else montoEl.value = '';
+    }
+
+    if (taller === 'CORTE' || taller === 'CONFECCION' || taller === 'BORDADO') {
+        descLabel.textContent = 'Orden de Trabajo / Lote';
+        descInput.placeholder = 'Ej: OP-001, M003';
+    } else if (taller === 'CONTADOR' || taller === 'ADMINISTRACION' || taller === 'TIENDA') {
+        descLabel.textContent = 'Periodo de Pago';
+        descInput.placeholder = 'Ej: Del 01/Abr al 15/Abr';
+    } else {
+        descLabel.textContent = 'Descripción / Notas';
+        descInput.placeholder = 'Detalles opcionales';
+    }
+}
+
+function plUpdatePagoUI() {
+    const taller = document.getElementById('pl-pago-taller').value;
+    const descLabel = document.getElementById('pl-pago-desc-label');
+    const descInput = document.getElementById('pl-pago-desc');
+
+    if (taller === 'CORTE' || taller === 'CONFECCION' || taller === 'BORDADO') {
+        descLabel.textContent = 'A cuenta de Orden / Lote';
+        descInput.placeholder = 'Ej: Pago por M003';
+    } else if (taller === 'CONTADOR' || taller === 'ADMINISTRACION' || taller === 'TIENDA') {
+        descLabel.textContent = 'Periodo Pagado';
+        descInput.placeholder = 'Ej: Pago quincena Abr';
+    } else {
+        descLabel.textContent = 'Descripción / Notas';
+        descInput.placeholder = 'Detalles opcionales';
     }
 }
 
@@ -1533,11 +1563,14 @@ function initPlanillasForms() {
             tipo_registro: 'pago_realizado',
             cantidad: 0,
             monto_total: parseFloat(document.getElementById('pl-pago-monto').value),
-            descripcion: 'Abono/Pago'
+            descripcion: document.getElementById('pl-pago-desc').value.trim() || 'Abono/Pago'
         };
 
         const ok = await plSaveMov(mov);
-        if (ok) e.target.reset();
+        if (ok) {
+            e.target.reset();
+            plUpdatePagoUI();
+        }
         await plRender();
         btn.disabled = false; btn.textContent = '✓ Registrar Pago';
     };
