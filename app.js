@@ -1416,7 +1416,7 @@ function plUpdateFormUI() {
     const descLabel = document.getElementById('pl-trab-desc-label');
     const descInput = document.getElementById('pl-trab-desc');
     
-    if (taller === 'CORTE' || taller === 'CONFECCION') {
+    if (taller === 'CORTE' || taller === 'CONFECCION' || taller === 'CONFECCION_4') {
         cantGroup.style.display = 'block';
         montoEl.readOnly = true;
         document.getElementById('pl-trab-cantidad').required = true;
@@ -1429,7 +1429,7 @@ function plUpdateFormUI() {
         else montoEl.value = '';
     }
 
-    if (taller === 'CORTE' || taller === 'CONFECCION' || taller === 'BORDADO') {
+    if (taller === 'CORTE' || taller === 'CONFECCION' || taller === 'CONFECCION_4' || taller === 'BORDADO') {
         descLabel.textContent = 'Orden de Trabajo / Lote';
         descInput.placeholder = 'Ej: OP-001, M003';
     } else if (taller === 'CONTADOR' || taller === 'ADMINISTRACION' || taller === 'TIENDA') {
@@ -1446,7 +1446,7 @@ function plUpdatePagoUI() {
     const descLabel = document.getElementById('pl-pago-desc-label');
     const descInput = document.getElementById('pl-pago-desc');
 
-    if (taller === 'CORTE' || taller === 'CONFECCION' || taller === 'BORDADO') {
+    if (taller === 'CORTE' || taller === 'CONFECCION' || taller === 'CONFECCION_4' || taller === 'BORDADO') {
         descLabel.textContent = 'A cuenta de Orden / Lote';
         descInput.placeholder = 'Ej: Pago por M003';
     } else if (taller === 'CONTADOR' || taller === 'ADMINISTRACION' || taller === 'TIENDA') {
@@ -1465,6 +1465,7 @@ function plCalcMonto() {
     
     if (taller === 'CORTE') montoEl.value = (cant * 0.5).toFixed(2);
     else if (taller === 'CONFECCION') montoEl.value = (cant * 5.0).toFixed(2);
+    else if (taller === 'CONFECCION_4') montoEl.value = (cant * 4.0).toFixed(2);
 }
 
 async function plRender() {
@@ -1480,7 +1481,7 @@ async function plRender() {
         
         totalDeuda += val;
         if (m.taller === 'CORTE' || m.taller === 'TIENDA' || m.taller === 'OTROS' || m.taller === 'CONTADOR' || m.taller === 'ADMINISTRACION') ghcDeuda += val;
-        else if (m.taller === 'CONFECCION') confDeuda += val;
+        else if (m.taller === 'CONFECCION' || m.taller === 'CONFECCION_4') confDeuda += val;
         else if (m.taller === 'BORDADO') borDeuda += val;
     });
 
@@ -1503,7 +1504,7 @@ async function plRender() {
     if (data.length === 0) {
         list.innerHTML = '<li class="tx-empty">Sin historial de planillas aún.</li>';
     } else {
-        const iconos = { CORTE: '✂️', CONFECCION: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼' };
+        const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼' };
         list.innerHTML = data.slice(0, 15).map(m => `
             <li class="wc-hist-item">
                 <span class="wc-hist-icon">${iconos[m.taller] || '📄'}</span>
