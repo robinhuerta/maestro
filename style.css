@@ -1153,3 +1153,73 @@ select option {
     flex-direction: column;
     align-items: center;
 }
+
+/* =========================================================
+   RESPONSIVE (Mobile & Tablet)
+========================================================= */
+@media (max-width: 768px) {
+    /* Layout Base */
+    .dashboard-container { flex-direction: column; }
+    .main-content { padding-bottom: 70px; } /* Espacio para el nav inferior */
+    
+    /* Sidebar -> Bottom Nav */
+    .sidebar {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        width: 100%; height: 65px;
+        flex-direction: row; justify-content: center; align-items: center;
+        padding: 0; border-right: none; border-top: 1px solid var(--glass-border);
+        background: rgba(2, 6, 23, 0.95); z-index: 9000;
+        border-radius: 20px 20px 0 0;
+    }
+    .logo, .system-status { display: none; }
+    nav { flex-direction: row; width: 100%; justify-content: space-around; align-items: center; }
+    nav a { 
+        flex-direction: column; gap: 4px; padding: 8px 4px; font-size: 0.65rem; 
+        border-left: none !important; border-bottom: 3px solid transparent; 
+        border-radius: 0; text-align: center; color: var(--text-dim);
+    }
+    nav a.active { border-bottom: 3px solid var(--primary); background: transparent; color: var(--primary); }
+    .nav-icon { font-size: 1.3rem; margin-bottom: 2px; }
+
+    /* Main Areas */
+    .top-header { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1.5rem 1rem 1rem; }
+    .global-stats-header { width: 100%; justify-content: space-between; align-items: center; }
+    .page { padding: 1.5rem 1rem; }
+    .page-top h1 { font-size: 1.6rem; }
+    .biz-stats, .insights { grid-template-columns: 1fr; gap: 1rem; }
+    .projects-grid { grid-template-columns: 1fr; gap: 1rem; }
+    
+    /* Modals to Fullscreen */
+    .modal { align-items: flex-end; padding: 0; }
+    .modal-content, .modal-content.modal-wide, .modal-content.modal-xl {
+        width: 100%; max-width: 100%;
+        height: 92vh; max-height: 92vh;
+        border-radius: 20px 20px 0 0;
+        padding: 1.5rem 1rem;
+        margin: 0;
+    }
+    
+    /* Forms */
+    .form-row { grid-template-columns: 1fr; gap: 0; }
+    
+    /* Specific overrides */
+    .wc-kpi-bar { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 10px; justify-content: flex-start; scrollbar-width: none; }
+    .wc-kpi { min-width: 130px; flex-shrink: 0; }
+    .wc-tabs-nav { overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .wc-tab-btn { padding: 0.6rem 1rem; font-size: 0.85rem; }
+    .wc-charts-grid { grid-template-columns: 1fr; }
+    .wc-body { flex-direction: column; }
+    .wc-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .wc-header-actions { width: 100%; justify-content: space-between; }
+    .btn-wc { padding: 0.5rem; font-size: 0.8rem; flex: 1; text-align: center; }
+    
+    /* Hide some table columns */
+    .accounts-table th:nth-child(2), .accounts-table td:nth-child(2),
+    .accounts-table th:nth-child(3), .accounts-table td:nth-child(3) { display: none; }
+    .accounts-table tfoot td:first-child { display: none; } /* hide colspan completely or fix it */
+    
+    /* Items & Rows */
+    .sponsor-item, .biz-row, .wc-hist-item { gap: 8px; }
+    .wc-hist-meta { flex-direction: column; align-items: flex-end; gap: 4px; }
+}
