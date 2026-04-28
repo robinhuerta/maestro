@@ -1469,6 +1469,36 @@ function plCalcMonto() {
     else if (taller === 'CONFECCION_4') montoEl.value = (cant * 4.0).toFixed(2);
 }
 
+function plCheckAlerts() {
+    const today = new Date();
+    const d = today.getDate();
+    const dow = today.getDay(); // 0 = Domingo, 6 = Sabado
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+    let alertas = [];
+
+    // Contador: Dia 1 o 2
+    if (d === 1 || d === 2) alertas.push("Contador (Mensual)");
+    
+    // Control Calidad: 1, 2 y 15, 16
+    if (d === 1 || d === 2 || d === 15 || d === 16) alertas.push("Control Calidad (Quincenal)");
+    
+    // Administradora: 15, 16 y Fin de mes
+    if (d === 15 || d === 16 || d === lastDay || d === lastDay - 1) alertas.push("Administración (Quincenal)");
+    
+    // Tienda: Sabado o Domingo
+    if (dow === 6 || dow === 0) alertas.push("Tienda (Semanal)");
+
+    const alertsBox = document.getElementById('planillas-alerts');
+    if (alertas.length > 0) {
+        const unicas = [...new Set(alertas)];
+        alertsBox.style.display = 'block';
+        alertsBox.innerHTML = `<strong>🔔 ¡Recordatorio de Pagos!</strong><br>Hoy vence (o está por vencer) la planilla de: ${unicas.join(', ')}.`;
+    } else {
+        alertsBox.style.display = 'none';
+    }
+}
+
 async function plRender() {
     const data = await plLoadData();
     if (!data) return;
@@ -1490,6 +1520,8 @@ async function plRender() {
     document.getElementById('planillas-ghc').textContent = formatSoles(ghcDeuda);
     document.getElementById('planillas-confeccion').textContent = formatSoles(confDeuda);
     document.getElementById('planillas-bordados').textContent = formatSoles(borDeuda);
+
+    plCheckAlerts();
 
     // Update global project
     const proj = projectsData.find(p => p.id === 'planillas');
