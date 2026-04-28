@@ -1532,13 +1532,29 @@ async function plRender() {
     calculateGlobalBalance();
     renderProjects();
 
-    // Render list
+    plRenderHistorial();
+}
+
+function plRenderHistorial(searchTerm = '') {
     const list = document.getElementById('planillas-list');
-    if (data.length === 0) {
-        list.innerHTML = '<li class="tx-empty">Sin historial de planillas aún.</li>';
+    let filteredData = plAllData;
+    
+    if (searchTerm) {
+        const lowerSearch = searchTerm.toLowerCase();
+        filteredData = plAllData.filter(m => 
+            m.personal.toLowerCase().includes(lowerSearch) || 
+            m.taller.toLowerCase().includes(lowerSearch) ||
+            (m.descripcion && m.descripcion.toLowerCase().includes(lowerSearch))
+        );
+    }
+
+    if (filteredData.length === 0) {
+        list.innerHTML = '<li class="tx-empty">No se encontraron registros.</li>';
     } else {
         const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼', CONTROL_CALIDAD: '🔎' };
-        list.innerHTML = data.slice(0, 15).map(m => `
+        // Si hay busqueda, mostramos hasta 50 resultados. Si no, solo los ultimos 15.
+        const limit = searchTerm ? 50 : 15;
+        list.innerHTML = filteredData.slice(0, limit).map(m => `
             <li class="wc-hist-item">
                 <span class="wc-hist-icon">${iconos[m.taller] || '📄'}</span>
                 <div class="wc-hist-body">
