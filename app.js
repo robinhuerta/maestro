@@ -126,10 +126,12 @@ async function wcDeleteMov(id) {
 function wcBuildClients(data) {
     const map = {};
     data.filter(m => m.tipo !== 'compra').forEach(m => {
-        if (!map[m.cliente]) map[m.cliente] = { entregado: 0, cobrado: 0, movs: [] };
-        if (m.tipo === 'entrega') map[m.cliente].entregado += parseFloat(m.monto);
-        else                      map[m.cliente].cobrado   += parseFloat(m.monto);
-        map[m.cliente].movs.push(m);
+        const key = (m.cliente || '').toUpperCase().trim();
+        if (!key) return;
+        if (!map[key]) map[key] = { entregado: 0, cobrado: 0, movs: [] };
+        if (m.tipo === 'entrega') map[key].entregado += parseFloat(m.monto);
+        else                      map[key].cobrado   += parseFloat(m.monto);
+        map[key].movs.push(m);
     });
     Object.values(map).forEach(cl => { cl.saldo = cl.entregado - cl.cobrado; });
     return map;
@@ -590,7 +592,7 @@ function wcOpenForm(tipo, clientePrefill = '') {
         e.preventDefault();
         const btn = e.target.querySelector('button[type=submit]');
         btn.disabled = true; btn.textContent = 'Guardando...';
-        const clienteVal = document.getElementById('wc-f-cliente')?.value?.trim() || null;
+        const clienteVal = document.getElementById('wc-f-cliente')?.value?.trim()?.toUpperCase() || null;
 
         const mov = {
             tipo,
