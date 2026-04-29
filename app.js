@@ -1653,7 +1653,7 @@ async function plRender() {
     let ghcDeuda = 0, confDeuda = 0, borDeuda = 0, totalDeuda = 0, totalPagado = 0;
 
     data.forEach(m => {
-        const monto = Math.abs(parseFloat(m.monto_total));
+        const monto = Math.abs(parseFloat(m.monto_total) || 0);
         const factor = m.tipo_registro === 'trabajo_realizado' ? 1 : -1;
         const val = monto * factor;
         
@@ -1676,9 +1676,11 @@ async function plRender() {
     plCheckAlerts();
 
     // Update global project
+    // totalDeuda > 0 means we OWE money to workers (pending payroll debt)
+    // We store it as positive so it shows in the global balance
     const proj = projectsData.find(p => p.id === 'planillas');
     if (proj) {
-        proj.balance = -totalDeuda; // El balance global ahora refleja la deuda total pendiente
+        proj.balance = totalDeuda; // Deuda pendiente neta (positivo = debemos pagar)
         proj.lastUpdate = `${data.length} registros`;
     }
     calculateGlobalBalance();
