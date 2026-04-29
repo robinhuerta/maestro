@@ -1150,6 +1150,49 @@ select option {
 .wc-hist-amount.neg { color: var(--warning); }
 .wc-hist-amount.buy { color: var(--text-dim); }
 
+/* === HISTORIAL GLOBAL — Tabla estilo Excel === */
+.wc-hist-table-wrap {
+    overflow-x: auto; flex: 1;
+    padding: 0.8rem 1.2rem;
+    scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
+}
+.wc-hist-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.82rem; min-width: 780px;
+}
+.wc-hist-table thead tr {
+    background: rgba(99,102,241,0.08);
+    border-bottom: 2px solid rgba(99,102,241,0.3);
+}
+.wc-hist-table th {
+    padding: 9px 10px; text-align: left;
+    font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-dim); white-space: nowrap;
+}
+.wc-hist-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle; white-space: nowrap;
+}
+.wc-hist-tr { transition: background 0.15s; }
+.wc-hist-tr:hover { background: rgba(99,102,241,0.06); }
+.wc-hist-tr-cobro   td:first-child { border-left: 2px solid var(--success); }
+.wc-hist-tr-entrega td:first-child { border-left: 2px solid var(--warning); }
+.wc-hist-tr-compra  td:first-child { border-left: 2px solid var(--text-dim); }
+
+.wc-ht-fecha   { color: var(--text-dim); font-size: 0.78rem; }
+.wc-ht-tipo    { font-size: 1rem; }
+.wc-ht-cliente { font-weight: 600; }
+.wc-ht-cant    { font-weight: 700; text-align: center; }
+.wc-ht-precio  { color: var(--text-dim); }
+.wc-ht-total   { font-weight: 700; }
+.wc-ht-right   { text-align: right; }
+.wc-ht-na      { color: rgba(148,163,184,0.35); font-size: 0.75rem; }
+.wc-ht-total.pos { color: var(--success); }
+.wc-ht-total.neg { color: var(--warning); }
+.wc-ht-total.buy { color: var(--text-dim); }
+
 .btn-delete-tx {
     background: transparent; border: none; color: var(--text-dim);
     cursor: pointer; font-size: 0.85rem; padding: 2px 6px;

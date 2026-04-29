@@ -272,35 +272,49 @@ function wcRenderHistorial() {
         return;
     }
 
-    const iconMap  = { entrega: '📦', cobro: '💰', compra: '🛍️' };
     const classMap = { cobro: 'pos', entrega: 'neg', compra: 'buy' };
 
-    list.innerHTML = filtered.map(m => {
-        const pago = [m.tipo_pago, m.banco].filter(Boolean).join(' · ');
-        const sn   = (m.id||'').toString();
-        const histTags = (m.tipo === 'entrega' && (m.codigo || m.modelo || m.responsable)) ? `
-            <span class="wc-mov-tags" style="margin-top:1px;">
-                ${m.codigo ? `<span class="wc-tag wc-tag-code">${m.codigo}</span>` : ''}
-                ${m.modelo ? `<span class="wc-tag wc-tag-model">${m.modelo}</span>` : ''}
-                ${m.responsable ? `<span class="wc-tag wc-tag-resp">${m.responsable}</span>` : ''}
-                ${m.cantidad ? `<span class="wc-tag wc-tag-qty">${m.cantidad} × S/${parseFloat(m.precio||0).toFixed(2)}</span>` : ''}
-            </span>` : '';
-        return `
-        <li class="wc-hist-item">
-            <span class="wc-hist-icon">${iconMap[m.tipo] || '📄'}</span>
-            <div class="wc-hist-body">
-                <span class="wc-hist-client">${m.cliente || m.proveedor || '—'}</span>
-                <span class="wc-hist-desc">${m.descripcion || m.tipo}</span>
-                ${histTags}
-            </div>
-            <div class="wc-hist-meta">
-                ${pago ? `<span class="wc-hist-pago">${pago}</span>` : ''}
-                <span class="wc-hist-date">${m.fecha}</span>
-                <span class="wc-hist-amount ${classMap[m.tipo]||''}">${m.tipo==='cobro'?'+':'−'}${formatSoles(parseFloat(m.monto))}</span>
-                <button class="btn-delete-tx" onclick="wcDeleteMov('${sn}')" title="Eliminar">✕</button>
-            </div>
-        </li>`;
-    }).join('');
+    // Tabla estilo Excel
+    list.innerHTML = `
+    <table class="wc-hist-table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Cliente</th>
+                <th>Código</th>
+                <th>Modelo</th>
+                <th>Responsable</th>
+                <th>Cant.</th>
+                <th>Precio</th>
+                <th class="wc-ht-right">Total</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            ${filtered.map(m => {
+                const sn       = (m.id||'').toString();
+                const isEnt    = m.tipo === 'entrega';
+                const precio   = isEnt && m.precio ? parseFloat(m.precio) : null;
+                const cantidad = isEnt && m.cantidad ? m.cantidad : '—';
+                const total    = parseFloat(m.monto || 0);
+                const tipoIcon = m.tipo === 'entrega' ? '📦' : m.tipo === 'cobro' ? '💰' : '🛍️';
+                return `
+                <tr class="wc-hist-tr wc-hist-tr-${m.tipo}">
+                    <td class="wc-ht-fecha">${m.fecha}</td>
+                    <td class="wc-ht-tipo">${tipoIcon}</td>
+                    <td class="wc-ht-cliente">${m.cliente || m.proveedor || '—'}</td>
+                    <td class="wc-ht-codigo">${isEnt && m.codigo ? `<span class="wc-tag wc-tag-code">${m.codigo}</span>` : '<span class="wc-ht-na">—</span>'}</td>
+                    <td class="wc-ht-modelo">${isEnt && m.modelo ? `<span class="wc-tag wc-tag-model">${m.modelo}</span>` : '<span class="wc-ht-na">—</span>'}</td>
+                    <td class="wc-ht-resp">${isEnt && m.responsable ? `<span class="wc-tag wc-tag-resp">${m.responsable}</span>` : '<span class="wc-ht-na">—</span>'}</td>
+                    <td class="wc-ht-cant">${cantidad}</td>
+                    <td class="wc-ht-precio">${precio ? 'S/ ' + precio.toFixed(2) : '<span class="wc-ht-na">—</span>'}</td>
+                    <td class="wc-ht-total wc-ht-right ${classMap[m.tipo]||''}">${m.tipo==='cobro'?'+':'−'}${formatSoles(total)}</td>
+                    <td><button class="btn-delete-tx" onclick="wcDeleteMov('${sn}')" title="Eliminar">✕</button></td>
+                </tr>`;
+            }).join('')}
+        </tbody>
+    </table>`;
 }
 
 function wcFilterHistorial() { wcRenderHistorial(); }
@@ -458,8 +472,14 @@ function wcOpenForm(tipo, clientePrefill = '') {
     // === CAMPOS ESPECIALES PARA ENTREGAS (formato Excel) ===
     const entregaFields = tipo === 'entrega' ? `
         <div class="form-row">
+            <div class="form-group" style="flex:1;">
+                <label>📅 Fecha de Entrega</label>
+                <input type="date" id="wc-f-fecha" value="${today}" required>
+            </div>
+        </div>
+        <div class="form-row">
             <div class="form-group">
-                <label>Código</label>
+                <label>Código de Producción</label>
                 <input type="text" id="wc-f-codigo" placeholder="Ej: D115, D122" style="text-transform:uppercase;">
             </div>
             <div class="form-group">
@@ -492,7 +512,7 @@ function wcOpenForm(tipo, clientePrefill = '') {
                 </select>
             </div>
             <div class="form-group">
-                <label>Cantidad (Entregado)</label>
+                <label>Cantidad Entregada</label>
                 <input type="number" id="wc-f-cantidad" placeholder="0" min="1" oninput="wcCalcTotal()" required>
             </div>
         </div>
@@ -523,6 +543,7 @@ function wcOpenForm(tipo, clientePrefill = '') {
             <input type="text" id="wc-f-desc" placeholder="Observaciones opcionales">
         </div>`;
 
+    // Para entrega: fecha ya está en entregaFields (visible al inicio del form)
     const montoCobroCampo = tipo !== 'entrega' ? `
                 <div class="form-row">
                     <div class="form-group">
@@ -533,13 +554,7 @@ function wcOpenForm(tipo, clientePrefill = '') {
                         <label>Fecha</label>
                         <input type="date" id="wc-f-fecha" value="${today}" required>
                     </div>
-                </div>` : `
-                <div class="form-row">
-                    <div class="form-group" style="flex:1;">
-                        <label>Fecha de Entrega</label>
-                        <input type="date" id="wc-f-fecha" value="${today}" required>
-                    </div>
-                </div>`;
+                </div>` : '';
 
     const pagoFields = tipo !== 'entrega' ? `
                 <div class="form-row">
