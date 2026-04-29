@@ -1692,6 +1692,13 @@ async function plRender() {
     plRenderHistorial();
 }
 
+async function plDeleteMov(id) {
+    if (!confirm('¿Eliminar este registro?')) return;
+    const { error } = await supabaseClient.from('maestro_planillas').delete().eq('id', id);
+    if (error) { alert('Error al eliminar: ' + error.message); return; }
+    await plRender();
+}
+
 function plRenderHistorial(searchTerm = '') {
     const list = document.getElementById('planillas-list');
     let filteredData = plAllData;
@@ -1723,6 +1730,7 @@ function plRenderHistorial(searchTerm = '') {
                     <span class="wc-hist-amount ${m.tipo_registro === 'trabajo_realizado' ? 'neg' : 'pos'}">
                         ${m.tipo_registro === 'trabajo_realizado' ? '−' : '+'}${formatSoles(Math.abs(parseFloat(m.monto_total)))}
                     </span>
+                    <button class="btn-delete-tx" onclick="plDeleteMov('${m.id}')" title="Eliminar">✕</button>
                 </div>
             </li>
         `).join('');
