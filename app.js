@@ -90,6 +90,16 @@ const projectsData = [
         balance: 0,
         path: '#',
         modalId: 'modal-planillas'
+    },
+    {
+        id: 'cuentas-generales',
+        name: 'Cuentas Generales',
+        icon: '📊',
+        status: 'online',
+        lastUpdate: 'Google Sheets',
+        balance: 0,
+        path: '#',
+        modalId: 'modal-cuentas-generales'
     }
 ];
 

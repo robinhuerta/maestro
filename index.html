@@ -790,6 +790,29 @@
             </div>
         </div>
 
+        <!-- ==========================================
+             MODAL: CUENTAS GENERALES — Google Sheets
+        =========================================== -->
+        <div id="modal-cuentas-generales" class="modal">
+            <div class="modal-content modal-xl glass" style="padding:0; overflow:hidden; display:flex; flex-direction:column;">
+                <header style="padding:1rem 1.5rem; margin-bottom:0; flex-shrink:0; border-bottom:1px solid var(--glass-border);">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:1.5rem;">📊</span>
+                        <div>
+                            <h2 style="margin:0; font-size:1.1rem;">Cuentas Generales</h2>
+                            <span style="font-size:0.72rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;">Vista de Google Sheets</span>
+                        </div>
+                    </div>
+                    <span class="close-btn" onclick="this.closest('.modal').classList.remove('active')">&times;</span>
+                </header>
+                <iframe
+                    src="https://docs.google.com/spreadsheets/d/1z0f07QRTEsvcaI_I2BPdwgwrr-8VIdc9LN9ujB1noRg/htmlview?widget=true&headers=false"
+                    style="width:100%; flex:1; border:none; min-height:0;"
+                    title="Cuentas Generales">
+                </iframe>
+            </div>
+        </div>
+
     </div>
 
     <!-- Supabase CDN -->
