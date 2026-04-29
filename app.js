@@ -278,12 +278,20 @@ function wcRenderHistorial() {
     list.innerHTML = filtered.map(m => {
         const pago = [m.tipo_pago, m.banco].filter(Boolean).join(' · ');
         const sn   = (m.id||'').toString();
+        const histTags = (m.tipo === 'entrega' && (m.codigo || m.modelo || m.responsable)) ? `
+            <span class="wc-mov-tags" style="margin-top:1px;">
+                ${m.codigo ? `<span class="wc-tag wc-tag-code">${m.codigo}</span>` : ''}
+                ${m.modelo ? `<span class="wc-tag wc-tag-model">${m.modelo}</span>` : ''}
+                ${m.responsable ? `<span class="wc-tag wc-tag-resp">${m.responsable}</span>` : ''}
+                ${m.cantidad ? `<span class="wc-tag wc-tag-qty">${m.cantidad} × S/${parseFloat(m.precio||0).toFixed(2)}</span>` : ''}
+            </span>` : '';
         return `
         <li class="wc-hist-item">
             <span class="wc-hist-icon">${iconMap[m.tipo] || '📄'}</span>
             <div class="wc-hist-body">
                 <span class="wc-hist-client">${m.cliente || m.proveedor || '—'}</span>
                 <span class="wc-hist-desc">${m.descripcion || m.tipo}</span>
+                ${histTags}
             </div>
             <div class="wc-hist-meta">
                 ${pago ? `<span class="wc-hist-pago">${pago}</span>` : ''}
@@ -401,11 +409,19 @@ function wcRenderDetail(name, cl) {
         <ul class="wc-movs-list">
             ${cl.movs.map(m => {
                 const pago = [m.tipo_pago, m.banco].filter(Boolean).join(' · ');
+                const entregaTags = (m.tipo === 'entrega' && (m.codigo || m.modelo || m.responsable)) ? `
+                    <span class="wc-mov-tags">
+                        ${m.codigo ? `<span class="wc-tag wc-tag-code">${m.codigo}</span>` : ''}
+                        ${m.modelo ? `<span class="wc-tag wc-tag-model">${m.modelo}</span>` : ''}
+                        ${m.responsable ? `<span class="wc-tag wc-tag-resp">${m.responsable}</span>` : ''}
+                        ${m.cantidad ? `<span class="wc-tag wc-tag-qty">${m.cantidad} uds × S/${parseFloat(m.precio||0).toFixed(2)}</span>` : ''}
+                    </span>` : '';
                 return `
             <li class="wc-mov-item ${m.tipo === 'cobro' ? 'wc-mov-cobro' : 'wc-mov-entrega'}">
                 <span class="wc-mov-icon">${m.tipo === 'cobro' ? '💰' : '📦'}</span>
                 <div class="wc-mov-info">
                     <span class="wc-mov-desc">${m.descripcion || (m.tipo === 'cobro' ? 'Cobro' : 'Entrega')}</span>
+                    ${entregaTags}
                     <span class="wc-mov-date">${m.fecha}${pago ? ' · ' + pago : ''}</span>
                 </div>
                 <span class="wc-mov-amount ${m.tipo === 'cobro' ? 'text-success' : 'text-warning'}">
@@ -426,9 +442,6 @@ function wcOpenForm(tipo, clientePrefill = '') {
     const safeV  = clientePrefill.replace(/"/g, '&quot;');
     const labels = { entrega: 'Registrar Entrega', cobro: 'Registrar Cobro', compra: 'Registrar Compra' };
     const titulo = tipo === 'entrega' ? '📦 Nueva Entrega' : tipo === 'cobro' ? '💰 Registrar Cobro / Abono' : '🛍️ Compra de Stock';
-    const descPlaceholder = tipo === 'entrega' ? 'Ej: 3 gorras snapback, 2 polos talla M'
-        : tipo === 'cobro' ? 'Ej: Abono, pago completo, adelanto'
-        : 'Ej: 50 gorras Gamarra, 20 polos Jirón';
 
     const clienteField = tipo !== 'compra' ? `
         <div class="form-group">
@@ -442,16 +455,93 @@ function wcOpenForm(tipo, clientePrefill = '') {
             <input type="text" id="wc-f-prov" placeholder="Ej: Gamarra, Distribuidora López">
         </div>` : '';
 
-    panel.innerHTML = `
-        <div class="wc-form-block">
-            <h4>${titulo}</h4>
-            <form id="form-wc-active">
-                ${clienteField}
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <input type="text" id="wc-f-desc" placeholder="${descPlaceholder}">
-                </div>
-                ${provField}
+    // === CAMPOS ESPECIALES PARA ENTREGAS (formato Excel) ===
+    const entregaFields = tipo === 'entrega' ? `
+        <div class="form-row">
+            <div class="form-group">
+                <label>Código</label>
+                <input type="text" id="wc-f-codigo" placeholder="Ej: D115, D122" style="text-transform:uppercase;">
+            </div>
+            <div class="form-group">
+                <label>Modelo</label>
+                <select id="wc-f-modelo">
+                    <option value="">— Seleccionar —</option>
+                    <option value="CURVO">Curvo</option>
+                    <option value="CLASICO">Clásico</option>
+                    <option value="TRUCKER">Trucker</option>
+                    <option value="SNAPBACK">Snapback</option>
+                    <option value="DAD HAT">Dad Hat</option>
+                    <option value="BUCKET">Bucket</option>
+                    <option value="POLO">Polo</option>
+                    <option value="OTRO">Otro</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Responsable</label>
+                <select id="wc-f-responsable">
+                    <option value="">— Seleccionar —</option>
+                    <option value="RICHAR">Richar</option>
+                    <option value="MILY">Mily</option>
+                    <option value="PIERO">Piero</option>
+                    <option value="WILIAM">Wiliam</option>
+                    <option value="DANIEL">Daniel</option>
+                    <option value="HERNAN">Hernan</option>
+                    <option value="OTRO">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Cantidad (Entregado)</label>
+                <input type="number" id="wc-f-cantidad" placeholder="0" min="1" oninput="wcCalcTotal()" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Precio Unitario (S/)</label>
+                <input type="number" id="wc-f-precio" placeholder="20.00" step="0.01" min="0" value="20" oninput="wcCalcTotal()" required>
+            </div>
+            <div class="form-group">
+                <label>Total (S/) <span style="font-size:0.7rem;opacity:0.6;">auto-calculado</span></label>
+                <input type="number" id="wc-f-monto" placeholder="0.00" step="0.01" min="0" readonly
+                    style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.4); font-weight:700; font-size:1.1rem; color:var(--warning);">
+            </div>
+        </div>` : '';
+
+    // === CAMPOS PARA COBRO / COMPRA (sin cambios) ===
+    const descPlaceholder = tipo === 'cobro' ? 'Ej: Abono, pago completo, adelanto'
+        : tipo === 'compra' ? 'Ej: 50 gorras Gamarra, 20 polos Jirón'
+        : '';
+
+    const descField = tipo !== 'entrega' ? `
+        <div class="form-group">
+            <label>Descripción</label>
+            <input type="text" id="wc-f-desc" placeholder="${descPlaceholder}">
+        </div>` : `
+        <div class="form-group">
+            <label>Descripción / Notas</label>
+            <input type="text" id="wc-f-desc" placeholder="Observaciones opcionales">
+        </div>`;
+
+    const montoCobroCampo = tipo !== 'entrega' ? `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Monto (S/)</label>
+                        <input type="number" id="wc-f-monto" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="wc-f-fecha" value="${today}" required>
+                    </div>
+                </div>` : `
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label>Fecha de Entrega</label>
+                        <input type="date" id="wc-f-fecha" value="${today}" required>
+                    </div>
+                </div>`;
+
+    const pagoFields = tipo !== 'entrega' ? `
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tipo de Pago</label>
@@ -479,17 +569,18 @@ function wcOpenForm(tipo, clientePrefill = '') {
                             <option value="OTRO">Otro</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Monto (S/)</label>
-                        <input type="number" id="wc-f-monto" placeholder="0.00" step="0.01" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Fecha</label>
-                        <input type="date" id="wc-f-fecha" value="${today}" required>
-                    </div>
-                </div>
+                </div>` : '';
+
+    panel.innerHTML = `
+        <div class="wc-form-block">
+            <h4>${titulo}</h4>
+            <form id="form-wc-active">
+                ${clienteField}
+                ${entregaFields}
+                ${descField}
+                ${provField}
+                ${pagoFields}
+                ${montoCobroCampo}
                 <button type="submit" class="btn-primary">${labels[tipo]}</button>
             </form>
         </div>`;
@@ -499,6 +590,7 @@ function wcOpenForm(tipo, clientePrefill = '') {
         const btn = e.target.querySelector('button[type=submit]');
         btn.disabled = true; btn.textContent = 'Guardando...';
         const clienteVal = document.getElementById('wc-f-cliente')?.value?.trim() || null;
+
         const mov = {
             tipo,
             monto:       parseFloat(document.getElementById('wc-f-monto').value),
@@ -509,6 +601,20 @@ function wcOpenForm(tipo, clientePrefill = '') {
             tipo_pago:   document.getElementById('wc-f-tipopago')?.value || null,
             banco:       document.getElementById('wc-f-banco')?.value || null,
         };
+
+        // Campos adicionales para entregas (formato Excel)
+        if (tipo === 'entrega') {
+            mov.codigo      = document.getElementById('wc-f-codigo')?.value?.trim()?.toUpperCase() || null;
+            mov.modelo      = document.getElementById('wc-f-modelo')?.value || null;
+            mov.responsable = document.getElementById('wc-f-responsable')?.value || null;
+            mov.cantidad    = parseInt(document.getElementById('wc-f-cantidad')?.value) || null;
+            mov.precio      = parseFloat(document.getElementById('wc-f-precio')?.value) || null;
+            // Auto-generar descripción si no se puso
+            if (!mov.descripcion && mov.cantidad && mov.modelo) {
+                mov.descripcion = `${mov.cantidad} ${mov.modelo}${mov.responsable ? ' (' + mov.responsable + ')' : ''}`;
+            }
+        }
+
         if (clienteVal) wcSelectedClient = clienteVal;
         const ok = await wcSaveMov(mov);
         if (ok) {
@@ -516,6 +622,9 @@ function wcOpenForm(tipo, clientePrefill = '') {
             const savedCliente = clienteVal;
             e.target.reset();
             document.getElementById('wc-f-fecha').value = today;
+            if (tipo === 'entrega' && document.getElementById('wc-f-precio')) {
+                document.getElementById('wc-f-precio').value = '20';
+            }
             if (savedCliente && document.getElementById('wc-f-cliente')) {
                 document.getElementById('wc-f-cliente').value = savedCliente;
             }
@@ -525,6 +634,15 @@ function wcOpenForm(tipo, clientePrefill = '') {
         }
         await wcRender();
     };
+}
+
+// Calcula total automático: cantidad × precio
+function wcCalcTotal() {
+    const cant   = parseFloat(document.getElementById('wc-f-cantidad')?.value) || 0;
+    const precio = parseFloat(document.getElementById('wc-f-precio')?.value) || 0;
+    const total  = cant * precio;
+    const montoEl = document.getElementById('wc-f-monto');
+    if (montoEl) montoEl.value = total > 0 ? total.toFixed(2) : '';
 }
 
 async function openManualModal() {
@@ -1535,7 +1653,7 @@ async function plRender() {
     let ghcDeuda = 0, confDeuda = 0, borDeuda = 0, totalDeuda = 0, totalPagado = 0;
 
     data.forEach(m => {
-        const monto = parseFloat(m.monto_total);
+        const monto = Math.abs(parseFloat(m.monto_total));
         const factor = m.tipo_registro === 'trabajo_realizado' ? 1 : -1;
         const val = monto * factor;
         
@@ -1560,7 +1678,7 @@ async function plRender() {
     // Update global project
     const proj = projectsData.find(p => p.id === 'planillas');
     if (proj) {
-        proj.balance = -totalPagado; // El balance global resta el dinero que ya salio (pagos realizados)
+        proj.balance = -totalDeuda; // El balance global ahora refleja la deuda total pendiente
         proj.lastUpdate = `${data.length} registros`;
     }
     calculateGlobalBalance();
@@ -1598,7 +1716,7 @@ function plRenderHistorial(searchTerm = '') {
                 <div class="wc-hist-meta">
                     <span class="wc-hist-date">${m.fecha}</span>
                     <span class="wc-hist-amount ${m.tipo_registro === 'trabajo_realizado' ? 'neg' : 'pos'}">
-                        ${m.tipo_registro === 'trabajo_realizado' ? '−' : '+'}${formatSoles(parseFloat(m.monto_total))}
+                        ${m.tipo_registro === 'trabajo_realizado' ? '−' : '+'}${formatSoles(Math.abs(parseFloat(m.monto_total)))}
                     </span>
                 </div>
             </li>
@@ -1628,7 +1746,7 @@ function initPlanillasForms() {
             personal: document.getElementById('pl-trab-personal').value.trim(),
             tipo_registro: 'trabajo_realizado',
             cantidad: parseInt(document.getElementById('pl-trab-cantidad').value || 0),
-            monto_total: parseFloat(document.getElementById('pl-trab-monto').value),
+            monto_total: Math.abs(parseFloat(document.getElementById('pl-trab-monto').value)),
             descripcion: desc || null
         };
 
@@ -1652,7 +1770,7 @@ function initPlanillasForms() {
             personal: document.getElementById('pl-pago-personal').value.trim(),
             tipo_registro: 'pago_realizado',
             cantidad: 0,
-            monto_total: parseFloat(document.getElementById('pl-pago-monto').value),
+            monto_total: Math.abs(parseFloat(document.getElementById('pl-pago-monto').value)),
             descripcion: document.getElementById('pl-pago-desc').value.trim() || 'Abono/Pago'
         };
 
