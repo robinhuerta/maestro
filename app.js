@@ -1624,11 +1624,10 @@ function plCheckAlerts() {
     if (typeof plAllData !== 'undefined' && plAllData.length > 0) {
         const deudasPersonales = {};
         plAllData.forEach(m => {
+            if (m.tipo_registro !== 'trabajo_realizado' || m.pagado) return;
             if (!deudasPersonales[m.personal]) deudasPersonales[m.personal] = { balance: 0, vencimientos: [] };
-            const factor = m.tipo_registro === 'trabajo_realizado' ? 1 : -1;
-            deudasPersonales[m.personal].balance += parseFloat(m.monto_total) * factor;
-            
-            if (m.tipo_registro === 'trabajo_realizado' && m.descripcion && m.descripcion.includes('[Vence:')) {
+            deudasPersonales[m.personal].balance += parseFloat(m.monto_total);
+            if (m.descripcion && m.descripcion.includes('[Vence:')) {
                 const match = m.descripcion.match(/\[Vence: (.*?)\]/);
                 if (match) deudasPersonales[m.personal].vencimientos.push(match[1]);
             }
@@ -1659,26 +1658,29 @@ function plCheckAlerts() {
     }
 }
 
+async function plPagarDeuda(id, monto, personal, taller) {
+    if (!confirm(`¿Marcar como PAGADA esta deuda de ${formatSoles(monto)} a ${personal}?`)) return;
+    const { error } = await supabaseClient
+        .from('maestro_planillas')
+        .update({ pagado: true })
+        .eq('id', id);
+    if (error) { alert('Error al pagar: ' + error.message); return; }
+    await plRender();
+}
+
 async function plRender() {
     const data = await plLoadData();
     if (!data) return;
 
-    let ghcDeuda = 0, confDeuda = 0, borDeuda = 0, totalDeuda = 0, totalPagado = 0;
+    let ghcDeuda = 0, confDeuda = 0, borDeuda = 0, totalDeuda = 0;
 
     data.forEach(m => {
+        if (m.tipo_registro !== 'trabajo_realizado' || m.pagado) return;
         const monto = Math.abs(parseFloat(m.monto_total) || 0);
-        const factor = m.tipo_registro === 'trabajo_realizado' ? 1 : -1;
-        const val = monto * factor;
-        
-        totalDeuda += val;
-        
-        if (m.tipo_registro === 'pago_realizado') {
-            totalPagado += monto;
-        }
-
-        if (m.taller === 'CORTE' || m.taller === 'TIENDA' || m.taller === 'OTROS' || m.taller === 'CONTADOR' || m.taller === 'ADMINISTRACION' || m.taller === 'CONTROL_CALIDAD') ghcDeuda += val;
-        else if (m.taller === 'CONFECCION' || m.taller === 'CONFECCION_4') confDeuda += val;
-        else if (m.taller === 'BORDADO') borDeuda += val;
+        totalDeuda += monto;
+        if (['CORTE','TIENDA','OTROS','CONTADOR','ADMINISTRACION','CONTROL_CALIDAD'].includes(m.taller)) ghcDeuda += monto;
+        else if (['CONFECCION','CONFECCION_4'].includes(m.taller)) confDeuda += monto;
+        else if (m.taller === 'BORDADO') borDeuda += monto;
     });
 
     document.getElementById('planillas-total-deuda').textContent = formatSoles(totalDeuda);
@@ -1726,24 +1728,35 @@ function plRenderHistorial(searchTerm = '') {
         list.innerHTML = '<li class="tx-empty">No se encontraron registros.</li>';
     } else {
         const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼', CONTROL_CALIDAD: '🔎' };
-        // Si hay busqueda, mostramos hasta 50 resultados. Si no, solo los ultimos 15.
-        const limit = searchTerm ? 50 : 15;
-        list.innerHTML = filteredData.slice(0, limit).map(m => `
-            <li class="wc-hist-item">
+        const limit = searchTerm ? 50 : 20;
+        list.innerHTML = filteredData.slice(0, limit).map(m => {
+            const monto = Math.abs(parseFloat(m.monto_total));
+            const esDeuda = m.tipo_registro === 'trabajo_realizado';
+            const pagada = m.pagado === true;
+            const liStyle = pagada ? 'opacity:0.45;' : '';
+            let accionBtn = '';
+            if (esDeuda && !pagada) {
+                accionBtn = `<button class="btn-pagar-deuda" onclick="plPagarDeuda('${m.id}', ${monto}, '${m.personal.replace(/'/g,"\\'")}', '${m.taller}')" title="Marcar como pagada">✓ Pagar</button>`;
+            } else if (esDeuda && pagada) {
+                accionBtn = `<span style="font-size:0.7rem;font-weight:700;color:var(--success);border:1px solid var(--success);border-radius:4px;padding:2px 6px;">PAGADA</span>`;
+            }
+            return `
+            <li class="wc-hist-item" style="${liStyle}">
                 <span class="wc-hist-icon">${iconos[m.taller] || '📄'}</span>
                 <div class="wc-hist-body">
                     <span class="wc-hist-client">${m.personal} <small style="color:var(--text-dim);">(${m.taller})</small></span>
-                    <span class="wc-hist-desc">${m.descripcion || (m.tipo_registro==='trabajo_realizado'?'Trabajo (Deuda)':'Pago Adelanto')} ${m.cantidad ? `[${m.cantidad} uds]` : ''}</span>
+                    <span class="wc-hist-desc">${m.descripcion || (esDeuda ? 'Trabajo (Deuda)' : 'Pago')} ${m.cantidad ? `[${m.cantidad} uds]` : ''}</span>
                 </div>
                 <div class="wc-hist-meta">
                     <span class="wc-hist-date">${m.fecha}</span>
-                    <span class="wc-hist-amount ${m.tipo_registro === 'trabajo_realizado' ? 'neg' : 'pos'}">
-                        ${m.tipo_registro === 'trabajo_realizado' ? '−' : '+'}${formatSoles(Math.abs(parseFloat(m.monto_total)))}
+                    <span class="wc-hist-amount ${esDeuda && !pagada ? 'neg' : 'pos'}">
+                        ${esDeuda && !pagada ? '−' : '+'}${formatSoles(monto)}
                     </span>
+                    ${accionBtn}
                     <button class="btn-delete-tx" onclick="plDeleteMov('${m.id}')" title="Eliminar">✕</button>
                 </div>
-            </li>
-        `).join('');
+            </li>`;
+        }).join('');
     }
 }
 
