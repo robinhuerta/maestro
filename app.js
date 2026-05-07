@@ -1658,14 +1658,118 @@ function plCheckAlerts() {
     }
 }
 
-async function plPagarDeuda(id, monto, personal, taller) {
-    if (!confirm(`¿Marcar como PAGADA esta deuda de ${formatSoles(monto)} a ${personal}?`)) return;
+let plPagoActual = null;
+
+function plAbrirModalPago(id, montoTotal, montoPagadoAcum, personal, taller, descripcion, cantidad, fecha) {
+    plPagoActual = { id, montoTotal, montoPagadoAcum, personal, taller, descripcion, cantidad, fecha };
+    const restante = montoTotal - montoPagadoAcum;
+    document.getElementById('cp-nombre').textContent = personal;
+    document.getElementById('cp-taller').textContent = taller;
+    document.getElementById('cp-descripcion').textContent = descripcion || '—';
+    document.getElementById('cp-deuda-total').textContent = formatSoles(montoTotal);
+    const rowAcum = document.getElementById('cp-row-acum');
+    if (montoPagadoAcum > 0) {
+        rowAcum.style.display = 'flex';
+        document.getElementById('cp-acum').textContent = formatSoles(montoPagadoAcum);
+    } else {
+        rowAcum.style.display = 'none';
+    }
+    document.getElementById('cp-restante').textContent = formatSoles(restante);
+    document.getElementById('cp-monto').value = restante.toFixed(2);
+    document.getElementById('cp-monto').max = restante;
+    document.getElementById('modal-confirmar-pago').style.display = 'flex';
+    setTimeout(() => document.getElementById('cp-monto').focus(), 100);
+}
+
+function plCerrarModalPago() {
+    document.getElementById('modal-confirmar-pago').style.display = 'none';
+    plPagoActual = null;
+}
+
+async function plConfirmarPago() {
+    if (!plPagoActual) return;
+    const montoPagadoAhora = parseFloat(document.getElementById('cp-monto').value);
+    if (!montoPagadoAhora || montoPagadoAhora <= 0) { alert('Ingresa un monto válido.'); return; }
+
+    const { id, montoTotal, montoPagadoAcum, personal, taller, descripcion, cantidad, fecha } = plPagoActual;
+    const nuevoTotalPagado = montoPagadoAcum + montoPagadoAhora;
+    const pagoCompleto = nuevoTotalPagado >= montoTotal - 0.01;
+    const today = new Date().toISOString().split('T')[0];
+
+    const btn = document.getElementById('cp-btn-confirmar');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+
     const { error } = await supabaseClient
         .from('maestro_planillas')
-        .update({ pagado: true })
+        .update({ pagado: pagoCompleto, monto_pagado: nuevoTotalPagado, fecha_pago: today })
         .eq('id', id);
-    if (error) { alert('Error al pagar: ' + error.message); return; }
+
+    btn.disabled = false; btn.textContent = '✓ Confirmar Pago';
+    if (error) { alert('Error: ' + error.message); return; }
+
+    plCerrarModalPago();
     await plRender();
+
+    plGenerarRecibo({ personal, taller, descripcion, cantidad, fecha,
+        monto_total: montoTotal, monto_pagado_ahora: montoPagadoAhora,
+        monto_pagado_total: nuevoTotalPagado, fecha_pago: today, pagado: pagoCompleto });
+}
+
+function plGenerarRecibo(d) {
+    const restante = d.monto_total - d.monto_pagado_total;
+    const fechaLarga = new Date(d.fecha_pago + 'T12:00:00').toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Recibo — ${d.personal}</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;display:flex;justify-content:center;padding:30px}
+.card{background:#fff;width:400px;border-radius:12px;box-shadow:0 4px 30px rgba(0,0,0,0.12);overflow:hidden}
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:24px;text-align:center}
+.header .brand{font-size:0.75rem;letter-spacing:3px;text-transform:uppercase;opacity:0.7;margin-bottom:4px}
+.header h1{font-size:1.4rem;font-weight:700}
+.badge{display:inline-block;margin-top:10px;padding:4px 14px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.badge.completo{background:#dcfce7;color:#15803d}
+.badge.parcial{background:#fef9c3;color:#92400e}
+.body{padding:24px}
+.section-title{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;margin:16px 0 8px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9}
+.row .lbl{color:#64748b;font-size:0.85rem}
+.row .val{font-weight:600;color:#1e293b;font-size:0.9rem;text-align:right;max-width:60%}
+.monto-box{margin:20px 0;padding:18px;background:#f0fdf4;border-radius:10px;border:2px solid #16a34a;text-align:center}
+.monto-box .lbl{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#16a34a;margin-bottom:4px}
+.monto-box .monto{font-size:2.2rem;font-weight:800;color:#15803d}
+.monto-box .fecha{font-size:0.8rem;color:#64748b;margin-top:4px}
+.alerta{background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#92400e;text-align:center;margin-bottom:16px}
+.footer{padding:16px 24px;border-top:1px solid #f1f5f9;text-align:center;color:#94a3b8;font-size:0.72rem}
+.btn-print{display:block;width:calc(100% - 48px);margin:0 24px 20px;padding:12px;background:#1a1a2e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:600;transition:background 0.2s}
+.btn-print:hover{background:#16213e}
+@media print{.btn-print{display:none}body{background:#fff;padding:0}.card{box-shadow:none;border-radius:0;width:100%}}
+</style></head><body><div class="card">
+<div class="header">
+  <div class="brand">Sistema Maestro</div>
+  <h1>Comprobante de Pago</h1>
+  <span class="badge ${d.pagado ? 'completo' : 'parcial'}">${d.pagado ? '✓ Pago Completo' : '⚠ Pago Parcial — A Cuenta'}</span>
+</div>
+<div class="body">
+  <div class="section-title">Datos del Trabajador</div>
+  <div class="row"><span class="lbl">Nombre / Local</span><span class="val">${d.personal}</span></div>
+  <div class="row"><span class="lbl">Taller / Área</span><span class="val">${d.taller}</span></div>
+  <div class="section-title">Detalle del Trabajo</div>
+  <div class="row"><span class="lbl">Descripción</span><span class="val">${d.descripcion || '—'}</span></div>
+  ${d.cantidad ? `<div class="row"><span class="lbl">Cantidad</span><span class="val">${d.cantidad} gorras</span></div>` : ''}
+  <div class="row"><span class="lbl">Fecha de Trabajo</span><span class="val">${d.fecha}</span></div>
+  <div class="row"><span class="lbl">Monto Total de Deuda</span><span class="val">S/ ${parseFloat(d.monto_total).toFixed(2)}</span></div>
+  <div class="section-title">Pago Realizado</div>
+  <div class="monto-box">
+    <div class="lbl">Monto Pagado Ahora</div>
+    <div class="monto">S/ ${d.monto_pagado_ahora.toFixed(2)}</div>
+    <div class="fecha">${fechaLarga}</div>
+  </div>
+  ${!d.pagado ? `<div class="alerta">⚠ Saldo pendiente por cobrar: <strong>S/ ${restante.toFixed(2)}</strong></div>` : ''}
+</div>
+<button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+<div class="footer">Documento generado el ${new Date().toLocaleDateString('es-PE')} · Sistema MAESTRO</div>
+</div></body></html>`;
+    const w = window.open('', '_blank', 'width=480,height=750');
+    w.document.write(html); w.document.close();
 }
 
 async function plRender() {
@@ -1677,10 +1781,12 @@ async function plRender() {
     data.forEach(m => {
         if (m.tipo_registro !== 'trabajo_realizado' || m.pagado) return;
         const monto = Math.abs(parseFloat(m.monto_total) || 0);
-        totalDeuda += monto;
-        if (['CORTE','TIENDA','OTROS','CONTADOR','ADMINISTRACION','CONTROL_CALIDAD'].includes(m.taller)) ghcDeuda += monto;
-        else if (['CONFECCION','CONFECCION_4'].includes(m.taller)) confDeuda += monto;
-        else if (m.taller === 'BORDADO') borDeuda += monto;
+        const acum = Math.abs(parseFloat(m.monto_pagado) || 0);
+        const pendiente = Math.max(0, monto - acum);
+        totalDeuda += pendiente;
+        if (['CORTE','TIENDA','OTROS','CONTADOR','ADMINISTRACION','CONTROL_CALIDAD'].includes(m.taller)) ghcDeuda += pendiente;
+        else if (['CONFECCION','CONFECCION_4'].includes(m.taller)) confDeuda += pendiente;
+        else if (m.taller === 'BORDADO') borDeuda += pendiente;
     });
 
     document.getElementById('planillas-total-deuda').textContent = formatSoles(totalDeuda);
@@ -1702,6 +1808,7 @@ async function plRender() {
     renderProjects();
 
     plRenderHistorial();
+    plRenderPagosRealizados();
 }
 
 async function plDeleteMov(id) {
@@ -1730,27 +1837,34 @@ function plRenderHistorial(searchTerm = '') {
         const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼', CONTROL_CALIDAD: '🔎' };
         const limit = searchTerm ? 50 : 20;
         list.innerHTML = filteredData.slice(0, limit).map(m => {
-            const monto = Math.abs(parseFloat(m.monto_total));
+            const montoTotal = Math.abs(parseFloat(m.monto_total));
+            const montoPagadoAcum = Math.abs(parseFloat(m.monto_pagado) || 0);
             const esDeuda = m.tipo_registro === 'trabajo_realizado';
             const pagada = m.pagado === true;
-            const liStyle = pagada ? 'opacity:0.45;' : '';
+            const aCuenta = esDeuda && !pagada && montoPagadoAcum > 0;
+            const pendiente = Math.max(0, montoTotal - montoPagadoAcum);
+            const liStyle = pagada ? 'opacity:0.4;' : '';
+            const descEscape = (m.descripcion || '').replace(/'/g, "\\'");
+            const persEscape = m.personal.replace(/'/g, "\\'");
             let accionBtn = '';
             if (esDeuda && !pagada) {
-                accionBtn = `<button class="btn-pagar-deuda" onclick="plPagarDeuda('${m.id}', ${monto}, '${m.personal.replace(/'/g,"\\'")}', '${m.taller}')" title="Marcar como pagada">✓ Pagar</button>`;
-            } else if (esDeuda && pagada) {
-                accionBtn = `<span style="font-size:0.7rem;font-weight:700;color:var(--success);border:1px solid var(--success);border-radius:4px;padding:2px 6px;">PAGADA</span>`;
+                accionBtn = `<button class="btn-pagar-deuda" onclick="plAbrirModalPago('${m.id}',${montoTotal},${montoPagadoAcum},'${persEscape}','${m.taller}','${descEscape}',${m.cantidad||0},'${m.fecha}')" title="Registrar pago">✓ Pagar</button>`;
+            } else if (pagada) {
+                accionBtn = `<span class="badge-pagada">✓ PAGADA</span>`;
             }
+            const estadoBadge = aCuenta ? `<span class="badge-acuenta">A CUENTA · Resta ${formatSoles(pendiente)}</span>` : '';
             return `
             <li class="wc-hist-item" style="${liStyle}">
                 <span class="wc-hist-icon">${iconos[m.taller] || '📄'}</span>
                 <div class="wc-hist-body">
                     <span class="wc-hist-client">${m.personal} <small style="color:var(--text-dim);">(${m.taller})</small></span>
-                    <span class="wc-hist-desc">${m.descripcion || (esDeuda ? 'Trabajo (Deuda)' : 'Pago')} ${m.cantidad ? `[${m.cantidad} uds]` : ''}</span>
+                    <span class="wc-hist-desc">${m.descripcion || (esDeuda ? 'Trabajo' : 'Pago')} ${m.cantidad ? `[${m.cantidad} uds]` : ''}</span>
+                    ${estadoBadge}
                 </div>
                 <div class="wc-hist-meta">
                     <span class="wc-hist-date">${m.fecha}</span>
                     <span class="wc-hist-amount ${esDeuda && !pagada ? 'neg' : 'pos'}">
-                        ${esDeuda && !pagada ? '−' : '+'}${formatSoles(monto)}
+                        ${esDeuda && !pagada ? '−' : '+'}${formatSoles(esDeuda && !pagada ? pendiente : montoTotal)}
                     </span>
                     ${accionBtn}
                     <button class="btn-delete-tx" onclick="plDeleteMov('${m.id}')" title="Eliminar">✕</button>
@@ -1758,6 +1872,53 @@ function plRenderHistorial(searchTerm = '') {
             </li>`;
         }).join('');
     }
+}
+
+function plRenderPagosRealizados(searchTerm = '') {
+    const list = document.getElementById('planillas-pagos-list');
+    if (!list) return;
+    let data = plAllData.filter(m => m.tipo_registro === 'trabajo_realizado' && (m.pagado || (parseFloat(m.monto_pagado) || 0) > 0));
+    if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        data = data.filter(m => m.personal.toLowerCase().includes(q) || m.taller.toLowerCase().includes(q) || (m.descripcion && m.descripcion.toLowerCase().includes(q)));
+    }
+    document.getElementById('planillas-pagos-count').textContent = data.length;
+    if (data.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Sin pagos registrados aún.</li>';
+        return;
+    }
+    const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼', CONTROL_CALIDAD: '🔎' };
+    list.innerHTML = data.slice(0, 60).map(m => {
+        const montoTotal = Math.abs(parseFloat(m.monto_total));
+        const montoPagado = Math.abs(parseFloat(m.monto_pagado) || 0);
+        const restante = Math.max(0, montoTotal - montoPagado);
+        const completo = m.pagado === true;
+        const persEscape = m.personal.replace(/'/g, "\\'");
+        const descEscape = (m.descripcion || '').replace(/'/g, "\\'");
+        return `
+        <li class="wc-hist-item pl-pago-item">
+            <span class="wc-hist-icon">${iconos[m.taller] || '📄'}</span>
+            <div class="wc-hist-body">
+                <span class="wc-hist-client">${m.personal} <small style="color:var(--text-dim);">(${m.taller})</small></span>
+                <span class="wc-hist-desc">${m.descripcion || '—'} ${m.cantidad ? `[${m.cantidad} uds]` : ''}</span>
+                <span style="font-size:0.7rem;color:var(--text-dim);">Trabajo: ${m.fecha} ${m.fecha_pago ? `· Pago: ${m.fecha_pago}` : ''}</span>
+            </div>
+            <div class="wc-hist-meta" style="gap:6px;">
+                <div style="text-align:right;">
+                    <div style="font-size:0.8rem;color:var(--success);font-weight:700;">Pagado: ${formatSoles(montoPagado)}</div>
+                    ${!completo ? `<div style="font-size:0.7rem;color:var(--warning);">Resta: ${formatSoles(restante)}</div>` : ''}
+                </div>
+                <span class="${completo ? 'badge-pagada' : 'badge-acuenta'}">${completo ? '✓ COMPLETO' : 'A CUENTA'}</span>
+                <button class="btn-recibo" onclick="plVerRecibo('${persEscape}','${m.taller}','${descEscape}',${m.cantidad||0},'${m.fecha}',${montoTotal},${montoPagado},'${m.fecha_pago||''}',${completo})" title="Ver recibo">🖨️</button>
+            </div>
+        </li>`;
+    }).join('');
+}
+
+function plVerRecibo(personal, taller, descripcion, cantidad, fecha, montoTotal, montoPagado, fechaPago, completo) {
+    plGenerarRecibo({ personal, taller, descripcion, cantidad, fecha,
+        monto_total: montoTotal, monto_pagado_ahora: montoPagado,
+        monto_pagado_total: montoPagado, fecha_pago: fechaPago, pagado: completo });
 }
 
 function initPlanillasForms() {

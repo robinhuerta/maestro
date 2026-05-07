@@ -522,6 +522,48 @@ select option {
     color: #000;
 }
 
+.badge-pagada {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--success);
+    border: 1px solid var(--success);
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.badge-acuenta {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--warning);
+    border: 1px solid var(--warning);
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-block;
+    margin-top: 3px;
+}
+
+.btn-recibo {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 3px 8px;
+    border-radius: 5px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-recibo:hover {
+    background: rgba(99, 102, 241, 0.35);
+}
+
+.pl-pago-item .wc-hist-meta {
+    align-items: center;
+}
+
 /* Btn view como boton */
 .btn-view {
     font-size: 0.8rem;

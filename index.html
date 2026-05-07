@@ -777,15 +777,61 @@
                     </div>
                 </div>
 
-                <!-- Historial -->
+                <!-- Historial Deudas -->
                 <div class="module-section">
                     <h3 class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
-                        Historial Reciente
+                        Deudas Registradas
                         <input type="text" placeholder="🔍 Buscar nombre..." style="width: 150px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; font-size: 0.75rem;" oninput="plRenderHistorial(this.value)">
                     </h3>
                     <ul id="planillas-list" class="wc-historial-list">
                         <li class="tx-empty">Cargando...</li>
                     </ul>
+                </div>
+
+                <!-- Historial de Pagos Realizados -->
+                <div class="module-section" style="margin-top:1.5rem;">
+                    <h3 class="section-label" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span>Pagos Realizados <span id="planillas-pagos-count" style="font-size:0.75rem; background:rgba(34,197,94,0.15); color:var(--success); padding:2px 8px; border-radius:12px; font-weight:600; margin-left:6px;">0</span></span>
+                        <input type="text" placeholder="🔍 Buscar nombre..." style="width: 150px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; font-size: 0.75rem;" oninput="plRenderPagosRealizados(this.value)">
+                    </h3>
+                    <ul id="planillas-pagos-list" class="wc-historial-list">
+                        <li class="tx-empty">Sin pagos registrados aún.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Confirmar Pago Planillas -->
+        <div id="modal-confirmar-pago" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:10000; align-items:center; justify-content:center;">
+            <div class="glass" style="width:380px; max-width:95vw; padding:2rem; border-radius:16px; border:1px solid var(--glass-border);">
+                <h3 style="margin-bottom:1.2rem; font-size:1rem; color:var(--success);">💳 Registrar Pago</h3>
+                <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem; margin-bottom:1.2rem; font-size:0.88rem;">
+                    <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--glass-border);">
+                        <span style="color:var(--text-dim);">Trabajador</span><strong id="cp-nombre">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--glass-border);">
+                        <span style="color:var(--text-dim);">Taller</span><strong id="cp-taller">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--glass-border);">
+                        <span style="color:var(--text-dim);">Descripción</span><strong id="cp-descripcion" style="text-align:right; max-width:60%;">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--glass-border);">
+                        <span style="color:var(--text-dim);">Deuda Total</span><strong id="cp-deuda-total" style="color:var(--danger);">S/ 0.00</strong>
+                    </div>
+                    <div id="cp-row-acum" style="display:none; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--glass-border);">
+                        <span style="color:var(--text-dim);">Ya pagado antes</span><strong id="cp-acum" style="color:var(--success);">S/ 0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:8px 0 0;">
+                        <span style="color:var(--text-dim); font-weight:600;">Restante</span><strong id="cp-restante" style="color:var(--warning); font-size:1.1rem;">S/ 0.00</strong>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:1.2rem;">
+                    <label style="font-size:0.82rem; color:var(--text-dim); display:block; margin-bottom:6px;">Monto a pagar ahora (S/)</label>
+                    <input type="number" id="cp-monto" step="0.01" min="0.01" placeholder="0.00" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.07); color:white; font-size:1.1rem;">
+                </div>
+                <div style="display:flex; gap:0.75rem;">
+                    <button id="cp-btn-confirmar" onclick="plConfirmarPago()" class="btn-primary" style="flex:1; background:var(--success); font-weight:700;">✓ Confirmar Pago</button>
+                    <button onclick="plCerrarModalPago()" class="btn-primary" style="flex:0 0 auto; background:rgba(255,255,255,0.08); color:var(--text-dim);">Cancelar</button>
                 </div>
             </div>
         </div>
