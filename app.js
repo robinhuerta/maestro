@@ -1527,16 +1527,174 @@ function applyAdminName(name) {
 
 // === MÓDULO: TALLERES Y PLANILLAS ===
 let plAllData = [];
+let plVerArchivados = false;
 
 async function plLoadData() {
-    const { data, error } = await supabaseClient
+    let query = supabaseClient
         .from('maestro_planillas')
         .select('*')
         .order('fecha', { ascending: false })
         .order('created_at', { ascending: false });
+    if (!plVerArchivados) query = query.or('archivado.eq.false,archivado.is.null');
+    const { data, error } = await query;
     if (error) { console.error('Planillas error:', error.message); return null; }
     plAllData = data || [];
     return plAllData;
+}
+
+function plToggleArchivados() {
+    plVerArchivados = !plVerArchivados;
+    const btn = document.getElementById('btn-ver-archivados');
+    if (btn) btn.textContent = plVerArchivados ? '📂 Ocultar archivados' : '📂 Ver archivados';
+    plRender();
+}
+
+async function plCerrarPeriodo() {
+    const periodo = prompt('Nombre del periodo a cerrar (ej: "Mayo 2026 - 1ra quincena"):');
+    if (!periodo) return;
+    const ids = plAllData.filter(m => m.pagado === true && !m.archivado).map(m => m.id);
+    if (ids.length === 0) { alert('No hay deudas pagadas para archivar.'); return; }
+    if (!confirm(`Se archivarán ${ids.length} registros pagados del periodo "${periodo}". ¿Continuar?`)) return;
+    const { error } = await supabaseClient
+        .from('maestro_planillas')
+        .update({ archivado: true, periodo })
+        .in('id', ids);
+    if (error) { alert('Error: ' + error.message); return; }
+    alert(`✓ ${ids.length} registros archivados como "${periodo}".`);
+    await plRender();
+}
+
+function plVerKardex(personal) {
+    const registros = plAllData.filter(m => m.personal === personal)
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼', CONTROL_CALIDAD: '🔎' };
+    let totalDeuda = 0, totalPagado = 0;
+    registros.forEach(m => {
+        const monto = Math.abs(parseFloat(m.monto_total) || 0);
+        if (m.tipo_registro === 'trabajo_realizado') totalDeuda += monto;
+        totalPagado += Math.abs(parseFloat(m.monto_pagado) || 0);
+    });
+    const saldo = totalDeuda - totalPagado;
+    const filas = registros.map(m => {
+        const monto = Math.abs(parseFloat(m.monto_total));
+        const pagado = Math.abs(parseFloat(m.monto_pagado) || 0);
+        const esDeuda = m.tipo_registro === 'trabajo_realizado';
+        const estado = m.pagado ? '<span style="color:#16a34a;font-weight:700;">PAGADO</span>' : pagado > 0 ? '<span style="color:#ca8a04;font-weight:700;">A CUENTA</span>' : '<span style="color:#dc2626;font-weight:700;">PENDIENTE</span>';
+        return `<tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:8px 6px;">${m.fecha}</td>
+            <td style="padding:8px 6px;">${iconos[m.taller] || ''} ${m.taller}</td>
+            <td style="padding:8px 6px;max-width:160px;font-size:0.82rem;">${m.descripcion || '—'}${m.cantidad ? ` [${m.cantidad} uds]` : ''}</td>
+            <td style="padding:8px 6px;text-align:right;color:#dc2626;font-weight:600;">${esDeuda ? `S/ ${monto.toFixed(2)}` : '—'}</td>
+            <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:600;">${pagado > 0 ? `S/ ${pagado.toFixed(2)}` : '—'}</td>
+            <td style="padding:8px 6px;text-align:center;">${estado}</td>
+            <td style="padding:8px 6px;text-align:center;font-size:0.78rem;color:#94a3b8;">${m.fecha_pago || '—'}</td>
+        </tr>`;
+    }).join('');
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Kardex — ${personal}</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;padding:30px}
+.card{background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);overflow:hidden;max-width:900px;margin:0 auto}
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:24px 30px}
+.header .brand{font-size:0.7rem;letter-spacing:3px;text-transform:uppercase;opacity:0.6}
+.header h1{font-size:1.5rem;font-weight:700;margin:4px 0}
+.header .sub{font-size:0.85rem;opacity:0.7}
+.summary{display:flex;gap:0;border-bottom:1px solid #f1f5f9}
+.sum-item{flex:1;padding:16px 20px;text-align:center;border-right:1px solid #f1f5f9}
+.sum-item:last-child{border-right:none}
+.sum-item .lbl{font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;margin-bottom:4px}
+.sum-item .val{font-size:1.3rem;font-weight:800}
+.danger{color:#dc2626}.success{color:#16a34a}.warning{color:#ca8a04}
+table{width:100%;border-collapse:collapse;font-size:0.88rem}
+th{background:#f8fafc;padding:10px 6px;text-align:left;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0}
+.btn-print{display:block;width:calc(100% - 60px);margin:20px 30px;padding:12px;background:#1a1a2e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:600}
+.footer{text-align:center;color:#94a3b8;font-size:0.72rem;padding:12px 30px 20px}
+@media print{.btn-print{display:none}body{background:#fff;padding:0}.card{box-shadow:none;border-radius:0}}
+</style></head><body><div class="card">
+<div class="header">
+  <div class="brand">Sistema Maestro · Kardex Individual</div>
+  <h1>${personal}</h1>
+  <div class="sub">Generado el ${new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+</div>
+<div class="summary">
+  <div class="sum-item"><div class="lbl">Total Trabajado</div><div class="val danger">S/ ${totalDeuda.toFixed(2)}</div></div>
+  <div class="sum-item"><div class="lbl">Total Pagado</div><div class="val success">S/ ${totalPagado.toFixed(2)}</div></div>
+  <div class="sum-item"><div class="lbl">Saldo Pendiente</div><div class="val ${saldo > 0 ? 'warning' : 'success'}">S/ ${saldo.toFixed(2)}</div></div>
+  <div class="sum-item"><div class="lbl">Registros</div><div class="val" style="color:#475569;">${registros.length}</div></div>
+</div>
+<div style="padding:0 0 10px;">
+<table>
+  <thead><tr>
+    <th style="padding:10px 6px;">Fecha</th><th>Taller</th><th>Descripción</th>
+    <th style="text-align:right;">Deuda</th><th style="text-align:right;">Pagado</th>
+    <th style="text-align:center;">Estado</th><th style="text-align:center;">F. Pago</th>
+  </tr></thead>
+  <tbody>${filas}</tbody>
+</table>
+</div>
+<button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+<div class="footer">Sistema MAESTRO · Documento generado el ${new Date().toLocaleDateString('es-PE')}</div>
+</div></body></html>`;
+    const w = window.open('', '_blank', 'width=960,height=750');
+    w.document.write(html); w.document.close();
+}
+
+function plExportarResumen() {
+    const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼', CONTROL_CALIDAD: '🔎' };
+    const pendientes = plAllData.filter(m => m.tipo_registro === 'trabajo_realizado' && !m.pagado);
+    let totalPendiente = 0;
+    const porPersona = {};
+    pendientes.forEach(m => {
+        const pend = Math.max(0, Math.abs(parseFloat(m.monto_total)||0) - Math.abs(parseFloat(m.monto_pagado)||0));
+        totalPendiente += pend;
+        if (!porPersona[m.personal]) porPersona[m.personal] = { taller: m.taller, deudas: [], total: 0 };
+        porPersona[m.personal].deudas.push(m);
+        porPersona[m.personal].total += pend;
+    });
+    const ranking = Object.entries(porPersona).sort((a, b) => b[1].total - a[1].total);
+    const filas = ranking.map(([nombre, info]) =>
+        info.deudas.map((m, i) => {
+            const pend = Math.max(0, Math.abs(parseFloat(m.monto_total)||0) - Math.abs(parseFloat(m.monto_pagado)||0));
+            return `<tr style="border-bottom:1px solid #f1f5f9;">
+                ${i === 0 ? `<td rowspan="${info.deudas.length}" style="padding:8px;font-weight:700;vertical-align:top;border-right:1px solid #e2e8f0;">${iconos[info.taller]||''} ${nombre}</td>` : ''}
+                <td style="padding:8px;font-size:0.82rem;">${m.descripcion||'—'}${m.cantidad?` [${m.cantidad} uds]`:''}</td>
+                <td style="padding:8px;">${m.fecha}</td>
+                <td style="padding:8px;text-align:right;color:#dc2626;font-weight:600;">S/ ${pend.toFixed(2)}</td>
+            </tr>`;
+        }).join('')
+    ).join('');
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Resumen de Planillas</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;padding:30px}
+.card{background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);max-width:800px;margin:0 auto;overflow:hidden}
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:24px 30px}
+.header .brand{font-size:0.7rem;letter-spacing:3px;text-transform:uppercase;opacity:0.6}
+.header h1{font-size:1.4rem;font-weight:700;margin:4px 0}
+.total-box{background:#fef2f2;border-bottom:2px solid #dc2626;padding:16px 30px;display:flex;justify-content:space-between;align-items:center}
+.total-box .lbl{color:#64748b;font-size:0.85rem}
+.total-box .val{font-size:1.8rem;font-weight:800;color:#dc2626}
+table{width:100%;border-collapse:collapse;font-size:0.88rem}
+th{background:#f8fafc;padding:10px 8px;text-align:left;font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0}
+.btn-print{display:block;width:calc(100% - 60px);margin:20px 30px;padding:12px;background:#1a1a2e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:600}
+.footer{text-align:center;color:#94a3b8;font-size:0.72rem;padding:0 30px 20px}
+@media print{.btn-print{display:none}body{background:#fff;padding:0}.card{box-shadow:none;border-radius:0}}
+</style></head><body><div class="card">
+<div class="header">
+  <div class="brand">Sistema Maestro · Resumen de Planillas</div>
+  <h1>Deudas Pendientes al ${new Date().toLocaleDateString('es-PE',{year:'numeric',month:'long',day:'numeric'})}</h1>
+</div>
+<div class="total-box">
+  <span class="lbl">Total adeudado al personal</span>
+  <span class="val">S/ ${totalPendiente.toFixed(2)}</span>
+</div>
+<table>
+  <thead><tr><th>Persona / Área</th><th>Descripción</th><th>Fecha</th><th style="text-align:right;">Pendiente</th></tr></thead>
+  <tbody>${filas}</tbody>
+</table>
+<button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+<div class="footer">Sistema MAESTRO · Generado el ${new Date().toLocaleDateString('es-PE')}</div>
+</div></body></html>`;
+    const w = window.open('', '_blank', 'width=860,height=750');
+    w.document.write(html); w.document.close();
 }
 
 async function plSaveMov(mov) {
@@ -1909,11 +2067,12 @@ function plRenderRanking() {
             ${ranking.map(([nombre, info], i) => {
                 const pct = Math.round((info.total / max) * 100);
                 const color = i === 0 ? 'var(--danger)' : i === 1 ? 'var(--warning)' : 'var(--text-dim)';
+                const nombreEsc = nombre.replace(/'/g, "\\'");
                 return `
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:0.8rem; width:18px; text-align:right; color:${color}; font-weight:700;">#${i+1}</span>
                     <span style="font-size:0.85rem; min-width:18px;">${iconos[info.taller] || '📄'}</span>
-                    <span style="font-size:0.85rem; font-weight:600; min-width:100px; color:white;">${nombre}</span>
+                    <button onclick="plVerKardex('${nombreEsc}')" style="font-size:0.85rem; font-weight:600; min-width:100px; color:white; background:none; border:none; cursor:pointer; text-align:left; padding:0; text-decoration:underline dotted; text-underline-offset:3px;">${nombre}</button>
                     <div style="flex:1; background:rgba(255,255,255,0.07); border-radius:4px; height:8px; overflow:hidden;">
                         <div style="width:${pct}%; height:100%; background:${color}; border-radius:4px; transition:width 0.4s;"></div>
                     </div>
