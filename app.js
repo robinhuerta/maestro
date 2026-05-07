@@ -1676,10 +1676,17 @@ function plAbrirModalPago(id, montoTotal, montoPagadoAcum, personal, taller, des
     }
     document.getElementById('cp-restante').textContent = formatSoles(restante);
     document.getElementById('cp-monto').value = restante.toFixed(2);
-    document.getElementById('cp-monto').max = restante;
+    document.getElementById('cp-monto').removeAttribute('max');
     document.getElementById('cp-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('modal-confirmar-pago').style.display = 'flex';
     setTimeout(() => document.getElementById('cp-monto').focus(), 100);
+}
+
+function plCheckMontoExceso() {
+    if (!plPagoActual) return;
+    const val = parseFloat(document.getElementById('cp-monto').value) || 0;
+    const restante = plPagoActual.montoTotal - plPagoActual.montoPagadoAcum;
+    document.getElementById('cp-exceso').style.display = val > restante ? 'block' : 'none';
 }
 
 function plCerrarModalPago() {
@@ -1764,7 +1771,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;display:flex;jus
     <div class="monto">S/ ${d.monto_pagado_ahora.toFixed(2)}</div>
     <div class="fecha">${fechaLarga}</div>
   </div>
-  ${!d.pagado ? `<div class="alerta">⚠ Saldo pendiente por cobrar: <strong>S/ ${restante.toFixed(2)}</strong></div>` : ''}
+  ${!d.pagado ? `<div class="alerta">⚠ Saldo pendiente: <strong>S/ ${restante.toFixed(2)}</strong></div>` : restante < 0 ? `<div style="background:#f0fdf4;border:1px solid #16a34a;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#15803d;text-align:center;margin-bottom:16px;">✓ Saldo a favor (adelanto): <strong>S/ ${Math.abs(restante).toFixed(2)}</strong></div>` : ''}
 </div>
 <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
 <div class="footer">Documento generado el ${new Date().toLocaleDateString('es-PE')} · Sistema MAESTRO</div>

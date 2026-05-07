@@ -793,7 +793,8 @@
                 <div style="display:flex; gap:0.75rem; margin-bottom:1.2rem;">
                     <div style="flex:1;">
                         <label style="font-size:0.82rem; color:var(--text-dim); display:block; margin-bottom:6px;">Monto a pagar ahora (S/)</label>
-                        <input type="number" id="cp-monto" step="0.01" min="0.01" placeholder="0.00" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.07); color:white; font-size:1.1rem;">
+                        <input type="number" id="cp-monto" step="0.01" min="0.01" placeholder="0.00" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.07); color:white; font-size:1.1rem;" oninput="plCheckMontoExceso()">
+                        <small id="cp-exceso" style="display:none; color:#4ade80; font-size:0.75rem; margin-top:4px;">✓ Adelanto / redondeo — se registrará como saldo a favor</small>
                     </div>
                     <div style="flex:1;">
                         <label style="font-size:0.82rem; color:var(--text-dim); display:block; margin-bottom:6px;">Fecha de pago</label>
