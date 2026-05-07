@@ -690,7 +690,7 @@
                 <div class="module-section" style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     <!-- Registrar Trabajo -->
                     <div class="glass" style="flex: 1; min-width: 280px; padding: 1.5rem; border-radius: 12px; background: rgba(239, 68, 68, 0.05);">
-                        <h3 class="section-label" style="color: var(--danger);">Registrar Trabajo (Suma Deuda)</h3>
+                        <h3 class="section-label" style="color: var(--danger);">Registrar Trabajo / Deuda</h3>
                         <form id="form-planillas-trabajo">
                             <div class="form-row">
                                 <div class="form-group">
@@ -737,44 +737,6 @@
                         </form>
                     </div>
 
-                    <!-- Registrar Pago -->
-                    <div class="glass" style="flex: 1; min-width: 280px; padding: 1.5rem; border-radius: 12px; background: rgba(34, 197, 94, 0.05);">
-                        <h3 class="section-label" style="color: var(--success);">Registrar Pago (Resta Deuda)</h3>
-                        <form id="form-planillas-pago">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Taller / Área *</label>
-                                    <select id="pl-pago-taller" required onchange="plUpdatePagoUI()">
-                                        <option value="">— Seleccionar —</option>
-                                        <option value="CORTE">Corte</option>
-                                        <option value="CONFECCION">Confección (S/ 5.0)</option>
-                                        <option value="CONFECCION_4">Confección Econ. (S/ 4.0)</option>
-                                        <option value="BORDADO">Bordado</option>
-                                        <option value="TIENDA">Tienda</option>
-                                        <option value="CONTADOR">Contador</option>
-                                        <option value="ADMINISTRACION">Administración</option>
-                                        <option value="CONTROL_CALIDAD">Control Calidad</option>
-                                        <option value="OTROS">Alquileres / Servicios</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Personal / Local *</label>
-                                    <input type="text" id="pl-pago-personal" placeholder="A quién se pagó" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Monto Pagado (S/) *</label>
-                                    <input type="number" id="pl-pago-monto" step="0.01" placeholder="0.00" required>
-                                </div>
-                                <div class="form-group">
-                                    <label id="pl-pago-desc-label">Descripción / Notas</label>
-                                    <input type="text" id="pl-pago-desc" placeholder="Detalles opcionales">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary" style="background: var(--success);">✓ Registrar Pago</button>
-                        </form>
-                    </div>
                 </div>
 
                 <!-- Historial Deudas -->
