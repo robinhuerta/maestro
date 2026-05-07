@@ -564,6 +564,29 @@ select option {
     align-items: center;
 }
 
+.pl-filtro-btn {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pl-filtro-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+
+.pl-filtro-active {
+    background: rgba(255,255,255,0.12) !important;
+    color: white !important;
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
 /* Btn view como boton */
 .btn-view {
     font-size: 0.8rem;

@@ -1990,14 +1990,26 @@ async function plDeleteMov(id) {
     await plRender();
 }
 
+let plFiltroActivo = 'todas';
+
+function plSetFiltro(filtro) {
+    plFiltroActivo = filtro;
+    document.querySelectorAll('.pl-filtro-btn').forEach(b => b.classList.remove('pl-filtro-active'));
+    document.getElementById('plf-' + filtro).classList.add('pl-filtro-active');
+    plRenderHistorial(document.getElementById('pl-search')?.value || '');
+}
+
 function plRenderHistorial(searchTerm = '') {
     const list = document.getElementById('planillas-list');
-    let filteredData = plAllData;
-    
+    let filteredData = plAllData.filter(m => m.tipo_registro === 'trabajo_realizado');
+
+    if (plFiltroActivo === 'pendientes') filteredData = filteredData.filter(m => !m.pagado);
+    else if (plFiltroActivo === 'pagadas') filteredData = filteredData.filter(m => m.pagado);
+
     if (searchTerm) {
         const lowerSearch = searchTerm.toLowerCase();
-        filteredData = plAllData.filter(m => 
-            m.personal.toLowerCase().includes(lowerSearch) || 
+        filteredData = filteredData.filter(m =>
+            m.personal.toLowerCase().includes(lowerSearch) ||
             m.taller.toLowerCase().includes(lowerSearch) ||
             (m.descripcion && m.descripcion.toLowerCase().includes(lowerSearch))
         );

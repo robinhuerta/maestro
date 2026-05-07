@@ -749,9 +749,16 @@
 
                 <!-- Historial Deudas -->
                 <div class="module-section">
-                    <h3 class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
-                        Deudas Registradas
-                        <input type="text" placeholder="🔍 Buscar nombre..." style="width: 150px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; font-size: 0.75rem;" oninput="plRenderHistorial(this.value)">
+                    <h3 class="section-label" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            Deudas Registradas
+                            <div style="display:flex; gap:4px;">
+                                <button id="plf-todas" onclick="plSetFiltro('todas')" class="pl-filtro-btn pl-filtro-active">Todas</button>
+                                <button id="plf-pendientes" onclick="plSetFiltro('pendientes')" class="pl-filtro-btn">Pendientes</button>
+                                <button id="plf-pagadas" onclick="plSetFiltro('pagadas')" class="pl-filtro-btn">Pagadas</button>
+                            </div>
+                        </div>
+                        <input type="text" id="pl-search" placeholder="🔍 Buscar nombre..." style="width: 150px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; font-size: 0.75rem;" oninput="plRenderHistorial(this.value)">
                     </h3>
                     <ul id="planillas-list" class="wc-historial-list">
                         <li class="tx-empty">Cargando...</li>
