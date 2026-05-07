@@ -265,20 +265,37 @@ header {
 }
 
 .btn-primary {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary), #6366f1cc);
     color: white;
-    border: none;
-    padding: 0.8rem 1.5rem;
-    border-radius: 12px;
-    font-weight: 600;
+    border: 1px solid rgba(99,102,241,0.4);
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.25s;
 }
 
 .btn-primary:hover {
-    box-shadow: 0 0 20px var(--primary-glow);
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99,102,241,0.45);
+    border-color: rgba(99,102,241,0.7);
 }
+
+.btn-primary:hover::after { opacity: 1; }
+.btn-primary:active { transform: translateY(0); }
 
 .projects-grid {
     display: grid;
@@ -489,103 +506,139 @@ select option {
 /* Boton eliminar transaccion */
 .btn-delete-tx {
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 0.85rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: color 0.2s, background 0.2s;
+    font-size: 0.78rem;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
     flex-shrink: 0;
 }
 
 .btn-delete-tx:hover {
     color: var(--danger);
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(239,68,68,0.15);
+    border-color: rgba(239,68,68,0.3);
 }
 
 .btn-pagar-deuda {
-    background: rgba(34, 197, 94, 0.15);
-    border: 1px solid var(--success);
-    color: var(--success);
+    background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.08));
+    border: 1px solid rgba(34,197,94,0.5);
+    color: #4ade80;
     cursor: pointer;
     font-size: 0.72rem;
     font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 5px;
-    transition: background 0.2s, color 0.2s;
+    letter-spacing: 0.3px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
     flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .btn-pagar-deuda:hover {
-    background: var(--success);
-    color: #000;
+    background: linear-gradient(135deg, rgba(34,197,94,0.5), rgba(34,197,94,0.3));
+    border-color: #4ade80;
+    box-shadow: 0 4px 15px rgba(34,197,94,0.3);
+    transform: translateY(-1px);
 }
 
+.btn-pagar-deuda:active { transform: translateY(0); }
+
 .badge-pagada {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 700;
-    color: var(--success);
-    border: 1px solid var(--success);
-    border-radius: 4px;
-    padding: 2px 7px;
+    letter-spacing: 0.5px;
+    color: #4ade80;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.35);
+    border-radius: 20px;
+    padding: 3px 10px;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .badge-acuenta {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 700;
-    color: var(--warning);
-    border: 1px solid var(--warning);
-    border-radius: 4px;
-    padding: 2px 6px;
+    letter-spacing: 0.3px;
+    color: #fbbf24;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.35);
+    border-radius: 20px;
+    padding: 3px 9px;
     display: inline-block;
-    margin-top: 3px;
+    margin-top: 4px;
 }
 
 .btn-recibo {
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.5);
+    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05));
+    border: 1px solid rgba(99,102,241,0.4);
     color: #a5b4fc;
     cursor: pointer;
     font-size: 0.85rem;
-    padding: 3px 8px;
-    border-radius: 5px;
-    transition: background 0.2s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
     flex-shrink: 0;
 }
 
 .btn-recibo:hover {
-    background: rgba(99, 102, 241, 0.35);
+    background: rgba(99,102,241,0.3);
+    border-color: rgba(99,102,241,0.7);
+    box-shadow: 0 4px 15px rgba(99,102,241,0.25);
+    transform: translateY(-1px);
 }
 
-.pl-pago-item .wc-hist-meta {
-    align-items: center;
-}
+.pl-pago-item .wc-hist-meta { align-items: center; }
 
 .pl-filtro-btn {
     font-size: 0.7rem;
     font-weight: 600;
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
-    border: 1px solid var(--glass-border);
-    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
     color: var(--text-dim);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    letter-spacing: 0.2px;
 }
 
 .pl-filtro-btn:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
     color: white;
 }
 
 .pl-filtro-active {
-    background: rgba(255,255,255,0.12) !important;
+    background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(99,102,241,0.15)) !important;
+    border-color: rgba(99,102,241,0.6) !important;
     color: white !important;
-    border-color: rgba(255,255,255,0.3) !important;
+    box-shadow: 0 2px 10px rgba(99,102,241,0.25);
 }
+
+.btn-header-action {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.btn-header-action:hover { transform: translateY(-1px); }
 
 /* Btn view como boton */
 .btn-view {

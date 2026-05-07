@@ -663,9 +663,9 @@
                 <header>
                     <h2>🏭 Control de Talleres y Planillas</h2>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <button onclick="plExportarResumen()" class="btn-primary" style="font-size:0.75rem; padding:5px 12px; background:rgba(99,102,241,0.3); border:1px solid rgba(99,102,241,0.5);">📥 Exportar PDF</button>
-                        <button id="btn-ver-archivados" onclick="plToggleArchivados()" class="btn-primary" style="font-size:0.75rem; padding:5px 12px; background:rgba(255,255,255,0.08);">📂 Ver archivados</button>
-                        <button onclick="plCerrarPeriodo()" class="btn-primary" style="font-size:0.75rem; padding:5px 12px; background:rgba(245,158,11,0.2); border:1px solid rgba(245,158,11,0.4); color:var(--warning);">🗂 Cerrar Periodo</button>
+                        <button onclick="plExportarResumen()" class="btn-header-action" style="background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(99,102,241,0.1)); border:1px solid rgba(99,102,241,0.45); color:#a5b4fc;">📥 Exportar PDF</button>
+                        <button id="btn-ver-archivados" onclick="plToggleArchivados()" class="btn-header-action" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:var(--text-dim);">📂 Archivados</button>
+                        <button onclick="plCerrarPeriodo()" class="btn-header-action" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.08)); border:1px solid rgba(245,158,11,0.4); color:#fbbf24;">🗂 Cerrar Periodo</button>
                         <span class="close-btn" onclick="this.closest('.modal').classList.remove('active')">&times;</span>
                     </div>
                 </header>
