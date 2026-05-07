@@ -1,5 +1,10 @@
 // MAESTRO — Command Center Dashboard
 
+function localDateStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 // === SUPABASE (Radio La Nueva 540) ===
 const supabaseClient = window.supabase.createClient(
     'https://zplvreuiuosmmeoeaeaz.supabase.co',
@@ -450,7 +455,7 @@ function wcOpenForm(tipo, clientePrefill = '') {
     if (tabBtn) wcSwitchTab('clientes', tabBtn);
 
     const panel  = document.getElementById('wc-right-panel');
-    const today  = new Date().toISOString().split('T')[0];
+    const today  = localDateStr();
     const safeV  = clientePrefill.replace(/"/g, '&quot;');
     const labels = { entrega: 'Registrar Entrega', cobro: 'Registrar Cobro', compra: 'Registrar Compra' };
     const titulo = tipo === 'entrega' ? '📦 Nueva Entrega' : tipo === 'cobro' ? '💰 Registrar Cobro / Abono' : '🛍️ Compra de Stock';
@@ -1677,7 +1682,7 @@ function plAbrirModalPago(id, montoTotal, montoPagadoAcum, personal, taller, des
     document.getElementById('cp-restante').textContent = formatSoles(restante);
     document.getElementById('cp-monto').value = restante.toFixed(2);
     document.getElementById('cp-monto').removeAttribute('max');
-    document.getElementById('cp-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('cp-fecha').value = localDateStr();
     document.getElementById('modal-confirmar-pago').style.display = 'flex';
     setTimeout(() => document.getElementById('cp-monto').focus(), 100);
 }
@@ -1702,7 +1707,7 @@ async function plConfirmarPago() {
     const { id, montoTotal, montoPagadoAcum, personal, taller, descripcion, cantidad, fecha } = plPagoActual;
     const nuevoTotalPagado = montoPagadoAcum + montoPagadoAhora;
     const pagoCompleto = nuevoTotalPagado >= montoTotal - 0.01;
-    const today = document.getElementById('cp-fecha').value || new Date().toISOString().split('T')[0];
+    const today = document.getElementById('cp-fecha').value || localDateStr();
 
     const btn = document.getElementById('cp-btn-confirmar');
     btn.disabled = true; btn.textContent = 'Guardando...';
@@ -1968,7 +1973,7 @@ function plVerRecibo(personal, taller, descripcion, cantidad, fecha, montoTotal,
 function initPlanillasForms() {
     const formTrab = document.getElementById('form-planillas-trabajo');
     const formPago = document.getElementById('form-planillas-pago');
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateStr();
 
     if (formTrab) formTrab.onsubmit = async (e) => {
         e.preventDefault();
