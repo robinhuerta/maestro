@@ -1677,6 +1677,7 @@ function plAbrirModalPago(id, montoTotal, montoPagadoAcum, personal, taller, des
     document.getElementById('cp-restante').textContent = formatSoles(restante);
     document.getElementById('cp-monto').value = restante.toFixed(2);
     document.getElementById('cp-monto').max = restante;
+    document.getElementById('cp-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('modal-confirmar-pago').style.display = 'flex';
     setTimeout(() => document.getElementById('cp-monto').focus(), 100);
 }
@@ -1694,7 +1695,7 @@ async function plConfirmarPago() {
     const { id, montoTotal, montoPagadoAcum, personal, taller, descripcion, cantidad, fecha } = plPagoActual;
     const nuevoTotalPagado = montoPagadoAcum + montoPagadoAhora;
     const pagoCompleto = nuevoTotalPagado >= montoTotal - 0.01;
-    const today = new Date().toISOString().split('T')[0];
+    const today = document.getElementById('cp-fecha').value || new Date().toISOString().split('T')[0];
 
     const btn = document.getElementById('cp-btn-confirmar');
     btn.disabled = true; btn.textContent = 'Guardando...';
