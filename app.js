@@ -1807,6 +1807,7 @@ async function plRender() {
     calculateGlobalBalance();
     renderProjects();
 
+    plRenderRanking();
     plRenderHistorial();
     plRenderPagosRealizados();
 }
@@ -1872,6 +1873,41 @@ function plRenderHistorial(searchTerm = '') {
             </li>`;
         }).join('');
     }
+}
+
+function plRenderRanking() {
+    const el = document.getElementById('planillas-ranking');
+    if (!el) return;
+    const porPersona = {};
+    plAllData.forEach(m => {
+        if (m.tipo_registro !== 'trabajo_realizado' || m.pagado) return;
+        const pendiente = Math.max(0, Math.abs(parseFloat(m.monto_total)||0) - Math.abs(parseFloat(m.monto_pagado)||0));
+        if (pendiente <= 0) return;
+        if (!porPersona[m.personal]) porPersona[m.personal] = { total: 0, taller: m.taller };
+        porPersona[m.personal].total += pendiente;
+    });
+    const ranking = Object.entries(porPersona).sort((a, b) => b[1].total - a[1].total);
+    if (ranking.length === 0) { el.innerHTML = ''; return; }
+    const max = ranking[0][1].total;
+    const iconos = { CORTE: '✂️', CONFECCION: '🧵', CONFECCION_4: '🧵', BORDADO: '🪡', TIENDA: '🏪', OTROS: '📄', CONTADOR: '📊', ADMINISTRACION: '💼', CONTROL_CALIDAD: '🔎' };
+    el.innerHTML = `
+        <h3 class="section-label" style="margin-bottom:0.75rem;">A quién se le debe más</h3>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            ${ranking.map(([nombre, info], i) => {
+                const pct = Math.round((info.total / max) * 100);
+                const color = i === 0 ? 'var(--danger)' : i === 1 ? 'var(--warning)' : 'var(--text-dim)';
+                return `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:0.8rem; width:18px; text-align:right; color:${color}; font-weight:700;">#${i+1}</span>
+                    <span style="font-size:0.85rem; min-width:18px;">${iconos[info.taller] || '📄'}</span>
+                    <span style="font-size:0.85rem; font-weight:600; min-width:100px; color:white;">${nombre}</span>
+                    <div style="flex:1; background:rgba(255,255,255,0.07); border-radius:4px; height:8px; overflow:hidden;">
+                        <div style="width:${pct}%; height:100%; background:${color}; border-radius:4px; transition:width 0.4s;"></div>
+                    </div>
+                    <span style="font-size:0.85rem; font-weight:700; color:${color}; min-width:80px; text-align:right;">${formatSoles(info.total)}</span>
+                </div>`;
+            }).join('')}
+        </div>`;
 }
 
 function plRenderPagosRealizados(searchTerm = '') {
