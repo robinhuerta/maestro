@@ -652,6 +652,40 @@
                         <button type="submit" class="btn-primary" id="btn-add-sponsor">+ Agregar Auspiciador</button>
                     </form>
                 </div>
+
+                <!-- ==========================================
+                     BITÁCORA DE EMISIONES (Diseño Premium)
+                =========================================== -->
+                <div class="module-section log-section">
+                    <div class="log-header-container">
+                        <div class="log-title-wrapper">
+                            <div class="log-glow-line"></div>
+                            <div>
+                                <h2 class="log-title">BITÁCORA DE EMISIONES</h2>
+                                <p class="log-subtitle">REPORTE DE CUMPLIMIENTO EN TIEMPO REAL</p>
+                            </div>
+                        </div>
+                        <div class="log-actions">
+                            <button class="log-btn log-btn-refresh" onclick="renderRadioLogs()">
+                                <span>🔄 ACTUALIZAR</span>
+                            </button>
+                            <div class="log-btn log-btn-status">
+                                <span class="log-dot-active"></span> MONITOREO ACTIVO
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="log-table-container">
+                        <div class="log-table-header">
+                            <span style="flex:1;">CONTENIDO EMITIDO</span>
+                            <span>HORA EXACTA</span>
+                        </div>
+                        <ul id="radio-logs-list" class="log-list">
+                            <li class="tx-empty">Cargando bitácora...</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
 

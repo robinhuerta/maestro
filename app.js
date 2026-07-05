@@ -1297,6 +1297,62 @@ async function renderAuspiciadores() {
             </div>
         </li>
     `).join('');
+    
+    // Refresh the logs automatically
+    renderRadioLogs();
+}
+
+async function renderRadioLogs() {
+    const list = document.getElementById('radio-logs-list');
+    if (!list) return;
+    
+    list.innerHTML = '<li class="tx-empty">Cargando bitácora...</li>';
+    
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/ads?logs=true');
+        if (!res.ok) throw new Error('Fallo al obtener bitácora');
+        const logs = await res.json();
+        
+        if (!logs || logs.length === 0) {
+            list.innerHTML = '<li class="tx-empty">Aún no hay registros de spots emitidos.</li>';
+            return;
+        }
+        
+        list.innerHTML = logs.map(log => {
+            // Asume que la fecha viene en formato UTC o ISO
+            // Si viene sin "Z", le forzamos a ser interpretada según convenga, pero Date() de JS lo intentará.
+            let dateObj = new Date(log.played_at);
+            if (isNaN(dateObj.getTime()) && log.played_at) {
+               dateObj = new Date(log.played_at + 'Z'); 
+            }
+            
+            let timeStr = log.played_at;
+            let dateStr = '';
+            if (!isNaN(dateObj.getTime())) {
+                timeStr = dateObj.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                dateStr = dateObj.toLocaleDateString('es-PE');
+            }
+            
+            return `
+                <li class="log-item">
+                    <div class="log-item-left">
+                        <div class="log-item-status-glow"></div>
+                        <div class="log-item-content">
+                            <span class="log-item-title">${log.ad_title || 'SPOT'}</span>
+                            <span class="log-item-sub">EMISIÓN EXITOSA</span>
+                        </div>
+                    </div>
+                    <div class="log-item-right">
+                        <div class="log-time-pill">${timeStr}</div>
+                        <div class="log-date">${dateStr}</div>
+                    </div>
+                </li>
+            `;
+        }).join('');
+    } catch (err) {
+        list.innerHTML = '<li class="tx-empty error-msg">⚠️ Error al cargar la bitácora.</li>';
+        console.error(err);
+    }
 }
 
 function updateRadioCard(totalMensual, totalCount) {
