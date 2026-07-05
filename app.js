@@ -26,7 +26,7 @@ const projectsData = [
     },
     {
         id: 'cosmos',
-        name: 'COSMOS Netflix',
+        name: 'COSMOS',
         icon: '🎬',
         status: 'online',
         lastUpdate: '0 suscriptores',
@@ -742,10 +742,10 @@ function renderProjects() {
         } else {
             btnHtml = `<span class="btn-view btn-disabled">Próximamente</span>`;
         }
-
         card.innerHTML = `
             <div class="project-icon">${project.icon}</div>
             <h3 class="project-title">${project.name}</h3>
+            ${project.id === 'cosmos' ? '<p style="font-size:0.75rem; color:#9ca3af; margin-bottom:8px; margin-top:-5px;">Un universo de diversiones</p>' : ''}
             <div class="project-status">
                 <span class="status-dot" style="background: ${getStatusColor(project.status)}"></span>
                 ${getStatusLabel(project.status)} · ${project.lastUpdate}
