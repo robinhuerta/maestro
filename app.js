@@ -115,27 +115,42 @@ let wcChartDonut     = null;
 let wcChartBars      = null;
 
 async function wcLoadData() {
-    const { data, error } = await supabaseClient
-        .from('wc_movimientos')
-        .select('*')
-        .order('fecha', { ascending: false })
-        .order('created_at', { ascending: false });
-    if (error) { console.error('WC error:', error.message); return null; }
-    wcAllData = data || [];
-    return wcAllData;
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/wordcaps');
+        if (!res.ok) throw new Error('Fallo al conectar con Cloudflare');
+        const data = await res.json();
+        wcAllData = data || [];
+        return wcAllData;
+    } catch (error) {
+        console.error('WC error:', error.message);
+        return null;
+    }
 }
 
 async function wcSaveMov(mov) {
-    const { error } = await supabaseClient.from('wc_movimientos').insert([mov]);
-    if (error) { alert('Error al guardar: ' + error.message); return false; }
-    return true;
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/wordcaps', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mov)
+        });
+        if (!res.ok) throw new Error('Error en el servidor');
+        return true;
+    } catch (error) {
+        alert('Error al guardar: ' + error.message);
+        return false;
+    }
 }
 
 async function wcDeleteMov(id) {
     if (!confirm('¿Eliminar este movimiento?')) return;
-    const { error } = await supabaseClient.from('wc_movimientos').delete().eq('id', id);
-    if (error) { alert('Error al eliminar: ' + error.message); return; }
-    await wcRender();
+    try {
+        const res = await fetch(`https://la-nueva-540.com/api/wordcaps?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Error al eliminar en el servidor');
+        await wcRender();
+    } catch (error) {
+        alert('Error al eliminar: ' + error.message);
+    }
 }
 
 function wcBuildClients(data) {
