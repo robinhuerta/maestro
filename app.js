@@ -5,11 +5,7 @@ function localDateStr() {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// === SUPABASE (Radio La Nueva 540) ===
-const supabaseClient = window.supabase.createClient(
-    'https://zplvreuiuosmmeoeaeaz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwbHZyZXVpdW9zbW1lb2VhZWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2NDc1MDcsImV4cCI6MjA4NTIyMzUwN30.NZE9qW4rKuZ_GZ2Xu2W3qo_vnKwO1Tud6OOAypnRg14'
-);
+// Supabase connection was removed in favor of Cloudflare D1.
 
 // === UTILIDADES ===
 function formatSoles(amount) {
@@ -32,10 +28,11 @@ const projectsData = [
         id: 'cosmos',
         name: 'COSMOS Netflix',
         icon: '🎬',
-        status: 'building',
-        lastUpdate: 'En construcción',
+        status: 'online',
+        lastUpdate: '0 suscriptores',
         balance: 0,
-        path: '#'
+        path: '#',
+        modalId: 'modal-cosmos'
     },
     {
         id: 'cerebro',
@@ -1137,20 +1134,24 @@ async function openCrmModal() {
     await renderCrmData();
 }
 
-async function loadCrmNegocios() {
-    const { data, error } = await supabaseClient
-        .from('crm_negocios')
-        .select('*')
-        .order('created_at', { ascending: false });
-    if (error) { console.error('Error CRM:', error.message); return null; }
-    return data || [];
+async function loadCrmData() {
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/crm');
+        if (!res.ok) throw new Error('Error al obtener datos');
+        const data = await res.json();
+        crmAllData = data || [];
+        return crmAllData;
+    } catch (error) {
+        console.error('CRM error:', error);
+        return [];
+    }
 }
 
 async function renderCrmData() {
     const list = document.getElementById('crm-negocios-list');
     list.innerHTML = '<li class="tx-empty">Cargando...</li>';
 
-    const data = await loadCrmNegocios();
+    const data = await loadCrmData();
     if (data === null) {
         list.innerHTML = '<li class="tx-empty error-msg">⚠️ Error al conectar. Verifica que la tabla exista.</li>';
         return;
@@ -1198,9 +1199,13 @@ async function renderCrmData() {
 
 async function deleteCrmNegocio(id) {
     if (!confirm('¿Eliminar este negocio?')) return;
-    const { error } = await supabaseClient.from('crm_negocios').delete().eq('id', id);
-    if (error) { alert('Error al eliminar: ' + error.message); return; }
-    await renderCrmData();
+    try {
+        const res = await fetch(`https://la-nueva-540.com/api/crm?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Error en el servidor');
+        await renderCrmData();
+    } catch (error) {
+        alert('Error al eliminar: ' + error.message);
+    }
 }
 
 function initCrmForm() {
@@ -1222,15 +1227,21 @@ function initCrmForm() {
             notas:    document.getElementById('crm-notas').value.trim() || null,
         };
 
-        const { error } = await supabaseClient.from('crm_negocios').insert([negocio]);
-        if (error) {
-            alert('Error al guardar: ' + error.message);
-        } else {
+        try {
+            const res = await fetch('https://la-nueva-540.com/api/crm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(negocio)
+            });
+            if (!res.ok) throw new Error('Error en el servidor');
+            
             btn.textContent = '✅ Guardado';
             form.reset();
             await renderCrmData();
             setTimeout(() => { btn.textContent = '+ Registrar Negocio'; btn.disabled = false; }, 1500);
             return;
+        } catch (error) {
+            alert('Error al guardar: ' + error.message);
         }
         btn.textContent = '+ Registrar Negocio';
         btn.disabled = false;
@@ -1238,7 +1249,7 @@ function initCrmForm() {
 }
 
 async function loadCrmBalance() {
-    const data = await loadCrmNegocios();
+    const data = await loadCrmData();
     if (!data) return;
     const activos = data.filter(n => n.etapa !== 'closed_lost');
     const total   = activos.reduce((a, n) => a + (parseFloat(n.valor) || 0), 0);
@@ -1597,26 +1608,32 @@ function applyAdminName(name) {
 
 // === MÓDULO: TALLERES Y PLANILLAS ===
 let plAllData = [];
-let plVerArchivados = false;
+let plFiltroStatus = 'activos';
+let plFiltroPeriodo = 'todos';
 
 async function plLoadData() {
-    let query = supabaseClient
-        .from('maestro_planillas')
-        .select('*')
-        .order('fecha', { ascending: false })
-        .order('created_at', { ascending: false });
-    if (!plVerArchivados) query = query.or('archivado.eq.false,archivado.is.null');
-    const { data, error } = await query;
-    if (error) { console.error('Planillas error:', error.message); return null; }
-    plAllData = data || [];
-    return plAllData;
-}
-
-function plToggleArchivados() {
-    plVerArchivados = !plVerArchivados;
-    const btn = document.getElementById('btn-ver-archivados');
-    if (btn) btn.textContent = plVerArchivados ? '📂 Ocultar archivados' : '📂 Ver archivados';
-    plRender();
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/planillas');
+        if (!res.ok) throw new Error('Fallo de conexión');
+        const data = await res.json();
+        
+        let finalData = data || [];
+        if (plFiltroStatus === 'activos') {
+            finalData = finalData.filter(d => !d.archivado);
+        } else if (plFiltroStatus === 'archivados') {
+            finalData = finalData.filter(d => d.archivado);
+        }
+        
+        if (plFiltroPeriodo !== 'todos') {
+            finalData = finalData.filter(d => d.periodo === plFiltroPeriodo);
+        }
+        
+        plAllData = finalData;
+        return plAllData;
+    } catch (error) {
+        console.error('Planillas error:', error);
+        return [];
+    }
 }
 
 async function plCerrarPeriodo() {
@@ -1625,11 +1642,19 @@ async function plCerrarPeriodo() {
     const ids = plAllData.filter(m => m.pagado === true && !m.archivado).map(m => m.id);
     if (ids.length === 0) { alert('No hay deudas pagadas para archivar.'); return; }
     if (!confirm(`Se archivarán ${ids.length} registros pagados del periodo "${periodo}". ¿Continuar?`)) return;
-    const { error } = await supabaseClient
-        .from('maestro_planillas')
-        .update({ archivado: true, periodo })
-        .in('id', ids);
-    if (error) { alert('Error: ' + error.message); return; }
+    
+    for (const id of ids) {
+        try {
+            await fetch('https://la-nueva-540.com/api/planillas', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'archivar', periodo, id })
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    
     alert(`✓ ${ids.length} registros archivados como "${periodo}".`);
     await plRender();
 }
@@ -1768,9 +1793,18 @@ th{background:#f8fafc;padding:10px 8px;text-align:left;font-size:0.7rem;letter-s
 }
 
 async function plSaveMov(mov) {
-    const { error } = await supabaseClient.from('maestro_planillas').insert([mov]);
-    if (error) { alert('Error al guardar: ' + error.message); return false; }
-    return true;
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/planillas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mov)
+        });
+        if (!res.ok) throw new Error('Error en el servidor');
+        return true;
+    } catch (error) {
+        alert('Error al guardar: ' + error.message);
+        return false;
+    }
 }
 
 function plUpdateFormUI() {
@@ -1940,14 +1974,27 @@ async function plConfirmarPago() {
     const btn = document.getElementById('cp-btn-confirmar');
     btn.disabled = true; btn.textContent = 'Guardando...';
 
-    const { error } = await supabaseClient
-        .from('maestro_planillas')
-        .update({ pagado: pagoCompleto, monto_pagado: nuevoTotalPagado, fecha_pago: today })
-        .eq('id', id);
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/planillas', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'pagar',
+                id: id,
+                pagado: pagoCompleto,
+                monto_pagado: nuevoTotalPagado,
+                fecha_pago: today
+            })
+        });
+        if (!res.ok) throw new Error('Error al actualizar pago');
+    } catch (e) {
+        console.error(e);
+        alert('Error: ' + e.message);
+        btn.disabled = false; btn.textContent = '✓ Confirmar Pago';
+        return;
+    }
 
     btn.disabled = false; btn.textContent = '✓ Confirmar Pago';
-    if (error) { alert('Error: ' + error.message); return; }
-
     plCerrarModalPago();
     await plRender();
 
@@ -2055,9 +2102,13 @@ async function plRender() {
 
 async function plDeleteMov(id) {
     if (!confirm('¿Eliminar este registro?')) return;
-    const { error } = await supabaseClient.from('maestro_planillas').delete().eq('id', id);
-    if (error) { alert('Error al eliminar: ' + error.message); return; }
-    await plRender();
+    try {
+        const res = await fetch(`https://la-nueva-540.com/api/planillas?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Error en el servidor');
+        await plRender();
+    } catch (error) {
+        alert('Error al eliminar: ' + error.message);
+    }
 }
 
 let plFiltroActivo = 'todas';
@@ -2271,7 +2322,127 @@ function initPlanillasForms() {
     };
 }
 
-// === INIT ===
+// === MÓDULO: COSMOS NETFLIX ===
+let cosmosAllData = [];
+
+async function loadCosmosData() {
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/cosmos');
+        if (!res.ok) throw new Error('Error al obtener datos');
+        const data = await res.json();
+        cosmosAllData = data || [];
+        return cosmosAllData;
+    } catch (error) {
+        console.error('COSMOS error:', error);
+        return [];
+    }
+}
+
+async function renderCosmosData() {
+    const list = document.getElementById('cosmos-list');
+    if (!list) return;
+    list.innerHTML = '<li class="tx-empty">Cargando...</li>';
+
+    const data = await loadCosmosData();
+    if (data.length === 0) {
+        list.innerHTML = '<li class="tx-empty">Aún no hay suscriptores en COSMOS.</li>';
+        updateCosmosCard(0, 0);
+        return;
+    }
+
+    const totalMensual = data.reduce((a, s) => a + (parseFloat(s.monto_mensual) || 0), 0);
+    
+    list.innerHTML = data.map(s => {
+        const estadoColor = s.estado === 'activo' ? '#22c55e' : (s.estado === 'inactivo' ? '#ef4444' : '#f59e0b');
+        return `
+            <li class="tx-item" style="border-left: 4px solid ${estadoColor}; padding-left: 10px;">
+                <div class="tx-info">
+                    <div class="tx-title">${s.cliente} <span style="font-size:0.7rem; background:#1f2937; padding:2px 6px; border-radius:4px; color:#9ca3af; margin-left:6px;">${s.plan}</span></div>
+                    <div class="tx-desc">Suscrito el: ${s.fecha_inicio || '-'} | Vence: ${s.fecha_vencimiento || '-'}</div>
+                </div>
+                <div class="tx-amount positive">
+                    S/ ${parseFloat(s.monto_mensual || 0).toFixed(2)} / mes
+                    <button class="btn-delete-tx" onclick="deleteCosmosSuscripcion('${s.id}')" title="Eliminar" style="margin-left:10px;">✕</button>
+                </div>
+            </li>
+        `;
+    }).join('');
+
+    updateCosmosCard(totalMensual, data.length);
+}
+
+function updateCosmosCard(totalMensual, totalCount) {
+    const cosmos = projectsData.find(p => p.id === 'cosmos');
+    if (cosmos) {
+        cosmos.lastUpdate = `${totalCount} suscriptor${totalCount !== 1 ? 'es' : ''}`;
+        cosmos.balance = totalMensual;
+    }
+    updateCards();
+    updateTotalBalance();
+}
+
+async function deleteCosmosSuscripcion(id) {
+    if (!confirm('¿Eliminar esta suscripción permanentemente?')) return;
+    try {
+        const res = await fetch(`https://la-nueva-540.com/api/cosmos?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Error en el servidor');
+        await renderCosmosData();
+    } catch (error) {
+        alert('Error al eliminar: ' + error.message);
+    }
+}
+
+function initCosmosForm() {
+    const form = document.getElementById('form-cosmos-suscripcion');
+    if (!form) return;
+    const btn = document.getElementById('btn-add-cosmos');
+    
+    // Set default dates
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('cosmos-inicio').value = today;
+    let nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    document.getElementById('cosmos-vence').value = nextMonth.toISOString().split('T')[0];
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        const data = {
+            cliente: document.getElementById('cosmos-cliente').value.trim(),
+            plan: document.getElementById('cosmos-plan').value,
+            monto_mensual: parseFloat(document.getElementById('cosmos-monto').value) || 0,
+            estado: document.getElementById('cosmos-estado').value,
+            fecha_inicio: document.getElementById('cosmos-inicio').value || null,
+            fecha_vencimiento: document.getElementById('cosmos-vence').value || null,
+        };
+
+        try {
+            const res = await fetch('https://la-nueva-540.com/api/cosmos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error('Error en el servidor');
+            
+            btn.textContent = '✅ Registrado';
+            form.reset();
+            
+            document.getElementById('cosmos-inicio').value = today;
+            document.getElementById('cosmos-vence').value = nextMonth.toISOString().split('T')[0];
+
+            await renderCosmosData();
+            setTimeout(() => { btn.textContent = '+ Registrar Suscriptor'; btn.disabled = false; }, 1500);
+            return;
+        } catch (error) {
+            alert('Error al guardar: ' + error.message);
+        }
+        btn.textContent = '+ Registrar Suscriptor';
+        btn.disabled = false;
+    };
+}
+
 function initDashboard() {
     renderDate();
     renderProjects();
@@ -2284,9 +2455,11 @@ function initDashboard() {
     initCrmForm();
     initRadioForm();
     initPlanillasForms();
+    initCosmosForm();
     loadRadioBalance();
     loadCrmBalance();
     loadWordCapsBalance();
+    renderCosmosData();
     plRender();
     const savedName = localStorage.getItem('maestro_admin_name');
     if (savedName) applyAdminName(savedName);
