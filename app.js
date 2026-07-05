@@ -25,7 +25,7 @@ const projectsData = [
         status: 'online',
         lastUpdate: 'Cargando...',
         balance: 0,
-        path: 'https://radioficial540.netlify.app',
+        path: 'https://la-nueva-540.com/',
         modalId: 'modal-radio'
     },
     {
@@ -1241,16 +1241,14 @@ async function openRadioModal() {
 }
 
 async function loadAuspiciadores() {
-    const { data, error } = await supabaseClient
-        .from('radio_auspiciadores')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error Supabase:', error.message);
+    try {
+        const res = await fetch('https://la-nueva-540.com/api/auspiciadores');
+        if (!res.ok) throw new Error('Fallo al cargar datos');
+        return await res.json();
+    } catch (error) {
+        console.error('Error Cloudflare API:', error.message);
         return null;
     }
-    return data || [];
 }
 
 async function renderAuspiciadores() {
@@ -1313,16 +1311,13 @@ function updateRadioCard(totalMensual, totalCount) {
 
 async function deleteAuspiciador(id) {
     if (!confirm('¿Eliminar este auspiciador?')) return;
-    const { error } = await supabaseClient
-        .from('radio_auspiciadores')
-        .delete()
-        .eq('id', id);
-
-    if (error) {
+    try {
+        const res = await fetch(`https://la-nueva-540.com/api/auspiciadores?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Fallo al eliminar');
+        await renderAuspiciadores();
+    } catch (error) {
         alert('Error al eliminar: ' + error.message);
-        return;
     }
-    await renderAuspiciadores();
 }
 
 function initRadioForm() {
@@ -1344,11 +1339,15 @@ function initRadioForm() {
             notas: document.getElementById('sp-notas').value.trim() || null,
         };
 
-        const { error } = await supabaseClient
-            .from('radio_auspiciadores')
-            .insert([newSponsor]);
-
-        if (error) {
+        try {
+            const res = await fetch('https://la-nueva-540.com/api/auspiciadores', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newSponsor)
+            });
+            const result = await res.json();
+            if (!res.ok || result.error) throw new Error(result.error || 'Fallo al guardar');
+        } catch (error) {
             alert('Error al guardar: ' + error.message);
             btn.textContent = '+ Agregar Auspiciador';
             btn.disabled = false;
