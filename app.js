@@ -1261,7 +1261,7 @@ async function renderAuspiciadores() {
     const data = await loadAuspiciadores();
 
     if (data === null) {
-        list.innerHTML = '<li class="tx-empty error-msg">⚠️ Error al conectar con Supabase. Verifica que la tabla exista.</li>';
+        list.innerHTML = '<li class="tx-empty error-msg">⚠️ Error al conectar con Cloudflare API. (Probablemente la tabla no exista aún en D1).</li>';
         return;
     }
 
